@@ -1,0 +1,1 @@
+run_id,seed,model,timestamp,period,num_trades,avg_price,min_price,max_price,human_avg,llm_calls,llm_errors,constraint_errors,parse_errors

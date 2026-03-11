@@ -1,0 +1,193 @@
+# =============================================================================
+# Attanasi, Centorrino & Moscati (2021) — Perfect Competition Replication
+# "Controlling monopoly power in a double-auction market experiment"
+# JPET 23(5), 1074-1101
+# =============================================================================
+
+# --- Experimental Parameters (from online appendix) ---
+experiment:
+  name: "Attanasi et al. (2021) Perfect Competition"
+  num_sellers: 4
+  num_buyers: 24
+  seller_cost: 12          # Uniform cost for all sellers, all units
+  buyer_valuations:        # Per group of 6 buyers (4 identical groups = 24)
+    - 20
+    - 17
+    - 15
+    - 13
+    - 8
+    - 0
+  num_groups: 4            # 4 identical groups of 6 buyers
+  seller_capacity: 24      # Units per seller per period (effectively unlimited)
+  buyer_capacity: 1        # Each buyer can buy 1 unit per period
+  num_periods: 3           # Trading periods
+  price_range: [0, 30]     # Integer prices only
+  num_steps: 30            # Trading rounds per period
+
+  # Competitive equilibrium benchmarks
+  competitive_equilibrium:
+    price: 12.5            # CE price range 12-13
+    quantity: 16           # 4 groups × 4 buyers with value > cost
+
+  # Human results from Table B.1 (Co played first)
+  human_benchmarks:
+    avg_prices: [14.49, 14.10, 13.50]
+    periods: [1, 2, 3]
+
+# --- LLM Model Configurations (Binghamton server) ---
+llm_models:
+  mistral-instruct:
+    name: Mistral 7B Instruct
+    model: mistral:instruct
+    url: https://chat.binghamton.edu/api/chat/completions
+    api_key: sk-d3f4681f2caa4b7991674f905e112daa
+    timeout: 60
+    temperature: 0.7
+    max_tokens: 50
+  llama3.1-70B:
+    name: Llama 3.1 70B
+    model: llama3.1:70B
+    url: https://chat.binghamton.edu/api/chat/completions
+    api_key: sk-d3f4681f2caa4b7991674f905e112daa
+    timeout: 120
+    temperature: 0.7
+    max_tokens: 100
+  llama3.3:
+    name: Llama 3.3 70B
+    model: llama3.3:latest
+    url: https://chat.binghamton.edu/api/chat/completions
+    api_key: sk-d3f4681f2caa4b7991674f905e112daa
+    timeout: 120
+    temperature: 0.7
+    max_tokens: 100
+  mixtral-8x22b:
+    name: Mixtral 8x22B
+    model: mixtral:8x22b-instruct
+    url: https://chat.binghamton.edu/api/chat/completions
+    api_key: sk-d3f4681f2caa4b7991674f905e112daa
+    timeout: 180
+    temperature: 0.7
+    max_tokens: 100
+  gemma3-27b:
+    name: Gemma 3 27B
+    model: gemma3:27b
+    url: https://chat.binghamton.edu/api/chat/completions
+    api_key: sk-d3f4681f2caa4b7991674f905e112daa
+    timeout: 60
+    temperature: 0.7
+    max_tokens: 100
+  gemma3-4b:
+    name: Gemma 3 4B
+    model: gemma3:4b
+    url: https://chat.binghamton.edu/api/chat/completions
+    api_key: sk-d3f4681f2caa4b7991674f905e112daa
+    timeout: 30
+    temperature: 0.7
+    max_tokens: 50
+  phi4:
+    name: Phi-4 14B
+    model: phi4:latest
+    url: https://chat.binghamton.edu/api/chat/completions
+    api_key: sk-d3f4681f2caa4b7991674f905e112daa
+    timeout: 60
+    temperature: 0.7
+    max_tokens: 75
+  qwen2.5-coder-32B:
+    name: Qwen 2.5 Coder 32B
+    model: qwen2.5-coder:32B
+    url: https://chat.binghamton.edu/api/chat/completions
+    api_key: sk-d3f4681f2caa4b7991674f905e112daa
+    timeout: 120
+    temperature: 0.7
+    max_tokens: 100
+  qwq:
+    name: QwQ 32B
+    model: qwq:latest
+    url: https://chat.binghamton.edu/api/chat/completions
+    api_key: sk-d3f4681f2caa4b7991674f905e112daa
+    timeout: 120
+    temperature: 0.7
+    max_tokens: 100
+  gpt-oss-20b:
+    name: GPT-OSS 20B
+    model: gpt-oss:20b
+    url: https://chat.binghamton.edu/api/chat/completions
+    api_key: sk-d3f4681f2caa4b7991674f905e112daa
+    timeout: 60
+    temperature: 0.7
+    max_tokens: 75
+  hermes3:
+    name: Hermes 3 8B
+    model: hermes3:latest
+    url: https://chat.binghamton.edu/api/chat/completions
+    api_key: sk-d3f4681f2caa4b7991674f905e112daa
+    timeout: 30
+    temperature: 0.7
+    max_tokens: 75
+  codellama-70B:
+    name: Code Llama 70B
+    model: codellama:70B
+    url: https://chat.binghamton.edu/api/chat/completions
+    api_key: sk-d3f4681f2caa4b7991674f905e112daa
+    timeout: 120
+    temperature: 0.7
+    max_tokens: 100
+
+# --- Prompt Templates ---
+# Mirrors exactly what human subjects see on screen (Figures A.4/A.5)
+prompts:
+  buyer_system: |
+    You are participating in a market experiment as a BUYER ({agent_id}).
+    There are 4 sellers and 24 buyers in this market.
+    Each of the 4 sellers can sell up to 24 units. Each buyer can buy at most 1 unit per period.
+    The production cost is the same for each unit across sellers.
+    This is Period {period} of 3.
+
+    Your valuation for one unit is {valuation}. Your profit = Valuation - Price.
+    You can only submit integer prices between 0 and 30.
+    You are not obligated to buy. We recommend making at least 1 point of profit.
+    You CANNOT bid above your valuation of {valuation}.
+
+    How trades work: If your bid meets or exceeds the current lowest ask, a trade occurs
+    between you and the seller holding that ask. Similarly, if a seller's ask meets or is
+    below the current highest bid, a trade occurs.
+  seller_system: |
+    You are participating in a market experiment as a SELLER ({agent_id}).
+    There are 4 sellers and 24 buyers in this market.
+    Each of the 4 sellers can sell up to 24 units. Each buyer can buy at most 1 unit per period.
+    The production cost is the same for each unit across sellers.
+    This is Period {period} of 3.
+
+    Your production cost per unit is {cost}. Your profit = Price - Cost.
+    You can only submit integer prices between 0 and 30.
+    You are not obligated to sell. We recommend making at least 1 point of profit.
+    You CANNOT ask below your cost of {cost}.
+
+    How trades work: If your ask meets or is below the current highest bid, a trade occurs
+    between you and the buyer holding that bid. Similarly, if a buyer's bid meets or exceeds
+    the current lowest ask, a trade occurs.
+  decision: |
+    === MARKET SCREEN ===
+    Trading round: {current_step} of {total_steps}. No more trades can happen after round {total_steps}.
+    Available units for purchase: {units_to_buy}
+    Available units for sale: {units_to_sell}
+    Units sold/bought so far: {units_traded}
+
+    Current best buy offer (highest bid): {best_bid}
+    Current best sell offer (lowest ask): {best_ask}
+
+    Transactions this period:
+    {transaction_history}
+
+    === YOUR SITUATION ===
+    {your_situation}
+    Cumulated payoffs: {cumulated_payoffs}
+
+    What integer price do you want to {action_verb}? Reply with ONLY a single integer.
+
+# --- Defaults ---
+defaults:
+  llm_model: llama3.3
+  num_steps: 30
+  num_runs: 1
+  seed: 42

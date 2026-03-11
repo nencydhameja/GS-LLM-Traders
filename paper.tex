@@ -1,0 +1,35 @@
+% =============================================================================
+% LLM Replication of Attanasi, Centorrino & Moscati (2021)
+% "Controlling monopoly power in a double-auction market experiment"
+% =============================================================================
+\documentclass[12pt]{article}
+\usepackage[margin=1in]{geometry}
+\usepackage{booktabs}
+\usepackage{amsmath}
+\usepackage{natbib}
+
+\title{Replicating a Double-Auction Market Experiment with LLM Agents}
+\author{}
+\date{}
+
+\begin{document}
+\maketitle
+
+% =============================================================================
+% LIMITATIONS
+% =============================================================================
+\section{Limitations}
+
+\subsection{Temporal Reasoning vs.\ Experienced Time}
+
+A key difference between human subjects and LLM agents concerns the role of time in trading behavior. In the original experiment, each trading period lasts 120 seconds. Human subjects see a countdown clock on screen, creating visceral time pressure: as the clock approaches zero, subjects who have not yet traded often concede on price to avoid missing the opportunity entirely. This end-of-period urgency is a well-documented feature of experimental double auctions.
+
+LLM agents do not experience time. They have no internal clock, no felt urgency, and no anxiety about missed opportunities. Each decision is processed as an independent prompt with no awareness of elapsed duration. However, LLMs can \textit{reason about} temporal information provided in text. Having been trained on vast corpora containing negotiations, auctions, and deadline-driven interactions, LLMs may have learned the heuristic that ``time running out'' warrants price concessions.
+
+To approximate the information human subjects receive from the countdown clock, we include the current trading round in each agent's prompt (e.g., ``Trading round 25 of 30''). This allows the LLM to reason strategically about remaining opportunities, even though it cannot feel urgency. Whether LLMs actually adjust their pricing behavior in response to this information is an empirical question that our multi-run design can address.
+
+We use 30 discrete trading rounds per period as a substitute for the 120-second continuous-time window. In each round, all 28 agents receive an opportunity to submit a bid or ask, yielding up to 840 total submissions per period---likely exceeding the number of submissions human subjects make in 120 seconds. Importantly, most trades in our simulations occur within the first few rounds, after which the market reaches a stalemate. This suggests that the total number of rounds is not a binding constraint on market outcomes; rather, the key driver is agent pricing behavior.
+
+\textbf{Implication:} Our results may understate end-of-period convergence effects that arise from human time pressure. If LLM sellers do not respond to ``round 28 of 30'' the way human sellers respond to ``10 seconds remaining,'' LLM markets may exhibit less price convergence toward the competitive equilibrium than human markets. This limitation is inherent to any LLM-as-agent experimental design and cannot be fully resolved without models that experience temporal pressure endogenously.
+
+\end{document}
