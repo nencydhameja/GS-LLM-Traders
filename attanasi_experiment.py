@@ -470,6 +470,7 @@ class CompetitionExperiment:
 
         # Results
         self.period_results: List[dict] = []
+        self.all_decisions: List[dict] = []  # every bid/ask, traded or not
 
     def _create_agents(self):
         """Create 4 sellers + 24 buyers per experimental design."""
@@ -576,6 +577,22 @@ class CompetitionExperiment:
                         price, aid, self.agents, period, step
                     )
 
+                # Log every decision
+                decision = {
+                    "period": period,
+                    "step": step,
+                    "agent_id": aid,
+                    "agent_type": agent.agent_type,
+                    "action": action,
+                    "submitted_price": price,
+                    "reservation_value": agent.reservation_value,
+                    "matched": trade is not None,
+                    "trade_price": trade.price if trade else "",
+                    "counterparty": (trade.seller_id if action == "bid" else trade.buyer_id) if trade else "",
+                    "profit": (trade.buyer_profit if action == "bid" else trade.seller_profit) if trade else "",
+                }
+                self.all_decisions.append(decision)
+
                 if trade is None:
                     model = self.llm_config.get("model", "?")
                     print(
@@ -657,37 +674,16 @@ class CompetitionExperiment:
                 f"{total_errors} errors"
             )
 
-    def get_trade_rows(self, run_id: int, run_seed: int, batch_timestamp: str) -> List[dict]:
-        """Return trade rows with run/seed/timestamp/model tags."""
+    def get_decision_rows(self, run_id: int, run_seed: int, batch_timestamp: str) -> List[dict]:
+        """Return all decision rows (every bid/ask) with run metadata."""
         rows = []
-        for t in self.auction.all_period_trades:
+        for d in self.all_decisions:
             rows.append({
                 "run_id": run_id,
                 "seed": run_seed,
                 "model": self.model_key,
                 "timestamp": batch_timestamp,
-                "period": t.period,
-                "step": t.step,
-                "price": t.price,
-                "buyer_id": t.buyer_id,
-                "seller_id": t.seller_id,
-                "buyer_valuation": t.buyer_valuation,
-                "seller_cost": t.seller_cost,
-                "buyer_profit": t.buyer_profit,
-                "seller_profit": t.seller_profit,
-            })
-        return rows
-
-    def get_summary_rows(self, run_id: int, run_seed: int, batch_timestamp: str) -> List[dict]:
-        """Return summary rows with run/seed/timestamp/model tags."""
-        rows = []
-        for r in self.period_results:
-            rows.append({
-                "run_id": run_id,
-                "seed": run_seed,
-                "model": self.model_key,
-                "timestamp": batch_timestamp,
-                **r,
+                **d,
             })
         return rows
 
@@ -747,15 +743,11 @@ def main():
     # Progress file stores: batch_timestamp, model, completed seeds, file paths
     progress_file = output_dir / f"attanasi_progress_{args.model}.json"
 
-    trade_fields = [
-        "run_id", "seed", "model", "timestamp", "period", "step", "price",
-        "buyer_id", "seller_id", "buyer_valuation", "seller_cost",
-        "buyer_profit", "seller_profit",
-    ]
-    summary_fields = [
-        "run_id", "seed", "model", "timestamp", "period", "num_trades",
-        "avg_price", "min_price", "max_price", "human_avg",
-        "llm_calls", "llm_errors", "constraint_errors", "parse_errors",
+    master_fields = [
+        "run_id", "seed", "model", "timestamp",
+        "period", "step", "agent_id", "agent_type", "action",
+        "submitted_price", "reservation_value",
+        "matched", "trade_price", "counterparty", "profit",
     ]
 
     if args.resume and progress_file.exists():
@@ -764,30 +756,25 @@ def main():
             progress = json.load(f)
         batch_timestamp = progress["batch_timestamp"]
         completed_seeds = set(progress["completed_seeds"])
-        trades_path = Path(progress["trades_path"])
-        summary_path = Path(progress["summary_path"])
+        master_path = Path(progress["master_path"])
         print(f"Resuming batch {batch_timestamp}: "
               f"{len(completed_seeds)}/{args.runs} runs already completed")
     else:
         # New batch
         batch_timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
         completed_seeds = set()
-        trades_path = output_dir / f"attanasi_trades_{batch_timestamp}.csv"
-        summary_path = output_dir / f"attanasi_summary_{batch_timestamp}.csv"
+        master_path = output_dir / f"attanasi_master_{args.model}_{batch_timestamp}.csv"
 
-        # Write CSV headers
-        with open(trades_path, "w", newline="") as f:
-            csv.DictWriter(f, fieldnames=trade_fields).writeheader()
-        with open(summary_path, "w", newline="") as f:
-            csv.DictWriter(f, fieldnames=summary_fields).writeheader()
+        # Write CSV header
+        with open(master_path, "w", newline="") as f:
+            csv.DictWriter(f, fieldnames=master_fields).writeheader()
 
         # Save initial progress
         progress = {
             "batch_timestamp": batch_timestamp,
             "model": args.model,
             "completed_seeds": [],
-            "trades_path": str(trades_path),
-            "summary_path": str(summary_path),
+            "master_path": str(master_path),
             "total_runs": args.runs,
             "base_seed": args.seed,
         }
@@ -830,17 +817,12 @@ def main():
                   f"Skipping — will retry on --resume. ***")
             continue
 
-        # --- Save immediately (append to CSVs) ---
-        trade_rows = experiment.get_trade_rows(run_id, run_seed, batch_timestamp)
-        summary_rows = experiment.get_summary_rows(run_id, run_seed, batch_timestamp)
+        # --- Save immediately (append to master CSV) ---
+        decision_rows = experiment.get_decision_rows(run_id, run_seed, batch_timestamp)
 
-        with open(trades_path, "a", newline="") as f:
-            writer = csv.DictWriter(f, fieldnames=trade_fields)
-            writer.writerows(trade_rows)
-
-        with open(summary_path, "a", newline="") as f:
-            writer = csv.DictWriter(f, fieldnames=summary_fields)
-            writer.writerows(summary_rows)
+        with open(master_path, "a", newline="") as f:
+            writer = csv.DictWriter(f, fieldnames=master_fields)
+            writer.writerows(decision_rows)
 
         # Update progress file
         completed_seeds.add(run_seed)
@@ -855,8 +837,7 @@ def main():
               f"Total completed: {len(completed_seeds)}/{args.runs}")
 
     # --- Final summary ---
-    print(f"\nAll trades saved to: {trades_path}")
-    print(f"All summaries saved to: {summary_path}")
+    print(f"\nMaster CSV: {master_path}")
     print(f"Completed: {len(completed_seeds)}/{args.runs} runs")
 
     if len(completed_seeds) < args.runs:
@@ -864,10 +845,9 @@ def main():
               f"Re-run with --resume to continue.")
 
     # Aggregate across all successful runs
-    # If resuming, we need to reload results from the summary CSV
     if len(completed_seeds) > 1:
-        all_run_results = _load_results_from_csv(summary_path)
-        _print_aggregate(all_run_results, args.model, output_dir)
+        all_run_results = _load_results_from_master(master_path)
+        _print_aggregate(all_run_results, args.model)
 
     # Clean up progress file when all runs complete
     if len(completed_seeds) >= args.runs:
@@ -875,22 +855,35 @@ def main():
         print("All runs complete — progress file removed.")
 
 
-def _load_results_from_csv(summary_path: Path) -> list:
-    """Reload per-run period results from the combined summary CSV."""
-    runs = {}
-    with open(summary_path, newline="") as f:
+def _load_results_from_master(master_path: Path) -> list:
+    """Reload per-run period results from the master CSV."""
+    from collections import defaultdict
+    runs = defaultdict(lambda: defaultdict(lambda: {"prices": [], "num_trades": 0}))
+    human_benchmarks = {1: 14.49, 2: 14.10, 3: 13.50}
+
+    with open(master_path, newline="") as f:
         reader = csv.DictReader(f)
         for row in reader:
             run_id = int(row["run_id"])
-            if run_id not in runs:
-                runs[run_id] = []
-            runs[run_id].append({
-                "period": int(row["period"]),
-                "num_trades": int(row["num_trades"]),
-                "avg_price": float(row["avg_price"]) if row["avg_price"] != "nan" else float("nan"),
-                "human_avg": float(row["human_avg"]),
+            period = int(row["period"])
+            if row["matched"] == "True":
+                runs[run_id][period]["num_trades"] += 1
+                runs[run_id][period]["prices"].append(float(row["trade_price"]))
+
+    result = []
+    for run_id in sorted(runs):
+        periods = []
+        for p in sorted(runs[run_id]):
+            info = runs[run_id][p]
+            avg_p = sum(info["prices"]) / len(info["prices"]) if info["prices"] else float("nan")
+            periods.append({
+                "period": p,
+                "num_trades": info["num_trades"],
+                "avg_price": avg_p,
+                "human_avg": human_benchmarks.get(p, 0),
             })
-    return list(runs.values())
+        result.append(periods)
+    return result
 
 
 def _bootstrap_ci(data: list, n_boot: int = 10000, alpha: float = 0.05, seed: int = 999) -> tuple:
@@ -907,7 +900,7 @@ def _bootstrap_ci(data: list, n_boot: int = 10000, alpha: float = 0.05, seed: in
     return boot_means[lo_idx], boot_means[hi_idx]
 
 
-def _print_aggregate(all_run_results: list, model_key: str, output_dir: Path):
+def _print_aggregate(all_run_results: list, model_key: str):
     """Compute and print cross-run statistics with bootstrap 95% CIs."""
     num_runs = len(all_run_results)
     num_periods = len(all_run_results[0])
@@ -922,7 +915,6 @@ def _print_aggregate(all_run_results: list, model_key: str, output_dir: Path):
     )
     print(f"{'-'*65}")
 
-    agg_rows = []
     for p in range(num_periods):
         prices = [
             run[p]["avg_price"]
@@ -955,34 +947,7 @@ def _print_aggregate(all_run_results: list, model_key: str, output_dir: Path):
             f"{human:>8.2f} {mean_t:>12.1f}"
         )
 
-        agg_rows.append({
-            "period": p + 1,
-            "mean_price": round(mean_p, 3),
-            "sd_price": round(sd, 3),
-            "ci_lo": round(ci_lo, 3),
-            "ci_hi": round(ci_hi, 3),
-            "human_avg": human,
-            "mean_trades": round(mean_t, 2),
-            "n_runs": n,
-            "ci_method": "bootstrap_10000",
-        })
-
     print(f"{'='*70}")
-
-    # Save aggregate CSV
-    ts = datetime.now().strftime("%Y%m%d_%H%M%S")
-    agg_path = output_dir / f"attanasi_aggregate_{ts}.csv"
-    with open(agg_path, "w", newline="") as f:
-        writer = csv.DictWriter(
-            f,
-            fieldnames=[
-                "period", "mean_price", "sd_price", "ci_lo", "ci_hi",
-                "human_avg", "mean_trades", "n_runs", "ci_method",
-            ],
-        )
-        writer.writeheader()
-        writer.writerows(agg_rows)
-    print(f"Aggregate saved to: {agg_path}")
 
 
 if __name__ == "__main__":
