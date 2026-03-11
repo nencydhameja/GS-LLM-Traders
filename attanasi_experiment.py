@@ -847,7 +847,7 @@ def main():
     # Aggregate across all successful runs
     if len(completed_seeds) > 1:
         all_run_results = _load_results_from_master(master_path)
-        _print_aggregate(all_run_results, args.model)
+        _print_aggregate(all_run_results, args.model, output_dir)
 
     # Clean up progress file when all runs complete
     if len(completed_seeds) >= args.runs:
@@ -900,8 +900,8 @@ def _bootstrap_ci(data: list, n_boot: int = 10000, alpha: float = 0.05, seed: in
     return boot_means[lo_idx], boot_means[hi_idx]
 
 
-def _print_aggregate(all_run_results: list, model_key: str):
-    """Compute and print cross-run statistics with bootstrap 95% CIs."""
+def _print_aggregate(all_run_results: list, model_key: str, output_dir: Path):
+    """Compute and print cross-run statistics with bootstrap 95% CIs, save to CSV."""
     num_runs = len(all_run_results)
     num_periods = len(all_run_results[0])
     human_benchmarks = [14.49, 14.10, 13.50]
@@ -915,6 +915,7 @@ def _print_aggregate(all_run_results: list, model_key: str):
     )
     print(f"{'-'*65}")
 
+    agg_rows = []
     for p in range(num_periods):
         prices = [
             run[p]["avg_price"]
@@ -947,7 +948,35 @@ def _print_aggregate(all_run_results: list, model_key: str):
             f"{human:>8.2f} {mean_t:>12.1f}"
         )
 
+        agg_rows.append({
+            "period": p + 1,
+            "model": model_key,
+            "n_runs": n,
+            "llm_mean_price": round(mean_p, 3),
+            "llm_sd_price": round(sd, 3),
+            "llm_ci_lo": round(ci_lo, 3),
+            "llm_ci_hi": round(ci_hi, 3),
+            "human_mean_price": human,
+            "llm_mean_trades": round(mean_t, 2),
+            "human_ce_trades": 16,
+            "ci_method": "bootstrap_10000",
+        })
+
     print(f"{'='*70}")
+
+    # Save bootstrap results
+    bootstrap_path = output_dir / f"attanasi_bootstrap_{model_key}.csv"
+    bootstrap_fields = [
+        "period", "model", "n_runs",
+        "llm_mean_price", "llm_sd_price", "llm_ci_lo", "llm_ci_hi",
+        "human_mean_price", "llm_mean_trades", "human_ce_trades",
+        "ci_method",
+    ]
+    with open(bootstrap_path, "w", newline="") as f:
+        writer = csv.DictWriter(f, fieldnames=bootstrap_fields)
+        writer.writeheader()
+        writer.writerows(agg_rows)
+    print(f"Bootstrap results saved to: {bootstrap_path}")
 
 
 if __name__ == "__main__":
