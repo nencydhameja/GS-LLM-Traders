@@ -1,0 +1,13 @@
+MISTRAL-INSTRUCT vs HUMAN (30 runs, bootstrap 95% CI)
+
+Period  LLM Price [95% CI]         Human Price  LLM Trades  CE Trades
+─────────────────────────────────────────────────────────────────────
+  1     16.54  [16.33, 16.77]        14.49         7.0         16
+  2     16.92  [16.70, 17.13]        14.10         6.2         16
+  3     17.26  [16.96, 17.56]        13.50         5.7         16
+
+Key takeaways:
+- LLM prices are 2-4 points above human averages, and the CIs don't overlap with human means
+- No convergence — LLM prices increase across periods (16.5->17.3) while humans decrease (14.5->13.5)
+- Severe under-trading — ~6 trades vs 16 at CE (38% quantity efficiency)
+- Sellers exhibit tacit collusion — consistently asking 17-19, never undercutting each other
