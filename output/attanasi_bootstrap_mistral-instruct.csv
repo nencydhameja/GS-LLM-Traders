@@ -1,4 +1,4 @@
-period,model,n_runs,llm_mean_price,llm_sd_price,llm_ci_lo,llm_ci_hi,human_mean_price,llm_mean_trades,human_approx_trades,ce_trades,ci_method
-1,mistral-instruct,30,16.544,0.615,16.329,16.765,14.49,7.0,12.7,16,bootstrap_10000
-2,mistral-instruct,30,16.915,0.612,16.7,17.129,14.1,6.2,12.8,16,bootstrap_10000
-3,mistral-instruct,30,17.259,0.864,16.959,17.563,13.5,5.7,12.6,16,bootstrap_10000
+period,model,n_runs,llm_mean_price,llm_sd_price,llm_ci_lo,llm_ci_hi,human_mean_price,llm_mean_trades,human_approx_trades,ce_trades,llm_buyer_error_pct,llm_seller_error_pct,ci_method
+1,mistral-instruct,30,16.544,0.615,16.329,16.765,14.49,7.0,12.7,16,23.5,0.0,bootstrap_10000
+2,mistral-instruct,30,16.915,0.612,16.7,17.129,14.1,6.2,12.8,16,22.3,0.0,bootstrap_10000
+3,mistral-instruct,30,17.259,0.864,16.959,17.563,13.5,5.7,12.6,16,17.9,0.0,bootstrap_10000
