@@ -95,3 +95,78 @@ Period  LLM Price [95% CI]         Human Price  LLM Trades  CE Trades
 - **No convergence** -- LLM prices *increase* across periods (16.5->17.3) while humans *decrease* (14.5->13.5)
 - **Severe under-trading** -- ~6 trades vs 16 at CE (38% quantity efficiency)
 - Sellers exhibit **tacit collusion** -- consistently asking 17-19, never undercutting each other
+
+---
+
+## Execution Plan (apape @ promaxgb10)
+
+### Machine
+
+| Resource | Spec |
+|----------|------|
+| Host | `promaxgb10-4ae4` |
+| OS | Ubuntu (Linux 6.17, aarch64) |
+| CPU | ARM Cortex-X925 (4P) + Cortex-A725 (16E), 20 cores, 3.9 GHz max |
+| RAM | 121 GiB total, ~74 GiB available |
+| GPU | NVIDIA GB10 |
+| Operator | `apape` |
+
+Scripts are run from this machine. All output is committed and pushed to this repo as it accumulates.
+
+### Notifications
+
+Progress emails are sent to:
+- `dr.duus@gmail.com`
+- `ndhamej1@binghamton.edu`
+
+Notify on: smoke-test result, each script completion, and any fatal error.
+
+---
+
+### Step 0 — Smoke test
+
+Before any long run, verify the stack is working end-to-end with a 1-run, 3-step dry run:
+
+```bash
+python attanasi_experiment.py --model gemma3-27b --steps 3 --runs 1 --seed 0
+```
+
+Expected: one CSV row per agent decision in `output/`, no HTTP errors. If it passes, proceed. If it fails, stop and diagnose before committing to multi-hour runs.
+
+---
+
+### Step 1 — Human baseline (~9 h)
+
+Shortest script; establishes the primary human-comparable benchmark.
+
+```bash
+chmod +x batch/*.sh
+nohup ./batch/run_human_baseline.sh gemma3-27b 30 42 > /dev/null 2>&1 &
+tail -f logs/human_baseline_gemma3-27b_*.log
+```
+
+**During the run:** commit and push `output/` and `logs/` files whenever new files appear (check every ~30 min).
+
+**On completion:** commit all remaining output, push, then send email to both addresses with the `results_*.txt` summary attached.
+
+---
+
+### Subsequent runs (in order)
+
+Run each script only after the previous one completes and its output has been pushed.
+
+| Order | Script | Approx time | What it tests |
+|-------|--------|-------------|---------------|
+| 2 | `run_memory_ablation.sh` | ~18 h | Baseline vs refined memory |
+| 3 | `run_persona_ablation.sh` | ~27 h | undergrad_econ / grad_econ / undergrad_human |
+| 4 | `run_dial_risk_aversion.sh` | ~45 h | 5 risk-aversion levels |
+| 5 | `run_dial_aggressiveness.sh` | ~45 h | 5 aggressiveness levels |
+| 6 | `run_dial_profit_orientation.sh` | ~45 h | 5 profit-orientation levels |
+| 7 | `run_temperature_sweep.sh` | ~45 h | 5 temperature levels |
+| 8 | `run_full_factorial.sh` | ~190 h | 125 dial×temp combos × 5 runs |
+| 9 | `run_human_baseline_all_models.sh` | ~90 h | Human baseline across all 10 models |
+
+For each script: use `--resume` if interrupted, commit/push incrementally, and send a completion email with the results summary.
+
+**Total estimated wall time (sequential):** ~514 h (~21 days).
+
