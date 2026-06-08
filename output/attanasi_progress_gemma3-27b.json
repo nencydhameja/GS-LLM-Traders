@@ -6,7 +6,11 @@
     42,
     43,
     44,
-    45
+    45,
+    46,
+    47,
+    48,
+    49
   ],
   "master_path": "/home/apape/zit/GS-LLM-Traders/output/attanasi_master_gemma3-27b_20260608_134243.csv",
   "total_runs": 30,
