@@ -1,0 +1,14 @@
+{
+  "batch_timestamp": "20260608_134243",
+  "model": "gemma3-27b",
+  "persona": null,
+  "completed_seeds": [
+    42,
+    43,
+    44,
+    45
+  ],
+  "master_path": "/home/apape/zit/GS-LLM-Traders/output/attanasi_master_gemma3-27b_20260608_134243.csv",
+  "total_runs": 30,
+  "base_seed": 42
+}
