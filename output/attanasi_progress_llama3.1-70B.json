@@ -1,0 +1,29 @@
+{
+  "batch_timestamp": "20260401_122500",
+  "model": "llama3.1-70B",
+  "persona": null,
+  "completed_seeds": [
+    42,
+    43,
+    44,
+    45,
+    46,
+    47,
+    48,
+    49,
+    50,
+    51,
+    52,
+    53,
+    54,
+    55,
+    56,
+    57,
+    58,
+    59,
+    60
+  ],
+  "master_path": "/Users/nencydhameja/PycharmProjects/LLM_ABM_Project/GS-LLM/output/attanasi_master_llama3.1-70B_20260401_122500.csv",
+  "total_runs": 30,
+  "base_seed": 42
+}

@@ -1,0 +1,4 @@
+period,model,n_runs,llm_mean_price,llm_sd_price,llm_ci_lo,llm_ci_hi,human_mean_price,llm_mean_trades,human_ce_trades,ci_method
+1,qwen2.5-coder-32B,30,14.592,0.798,14.315,14.876,14.49,9.47,16,bootstrap_10000
+2,qwen2.5-coder-32B,29,14.847,0.919,14.52,15.187,14.1,8.86,16,bootstrap_10000
+3,qwen2.5-coder-32B,27,14.805,1.075,14.409,15.217,13.5,8.0,16,bootstrap_10000

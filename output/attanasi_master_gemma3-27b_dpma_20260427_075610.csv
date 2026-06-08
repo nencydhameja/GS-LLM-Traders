@@ -1,0 +1,1 @@
+run_id,seed,model,persona,memory_type,risk_aversion,risk_aversion_level,aggressiveness,aggressiveness_level,profit_orientation,profit_orientation_level,timestamp,period,step,agent_id,agent_type,action,submitted_price,reservation_value,matched,trade_price,counterparty,profit

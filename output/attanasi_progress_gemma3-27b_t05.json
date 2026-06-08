@@ -1,0 +1,9 @@
+{
+  "batch_timestamp": "20260430_221858",
+  "model": "gemma3-27b",
+  "persona": null,
+  "completed_seeds": [],
+  "master_path": "/Users/nencydhameja/PycharmProjects/LLM_ABM_Project/GS-LLM/output/attanasi_master_gemma3-27b_t05_20260430_221858.csv",
+  "total_runs": 5,
+  "base_seed": 42
+}

@@ -1,0 +1,4 @@
+period,model,n_runs,llm_mean_price,llm_sd_price,llm_ci_lo,llm_ci_hi,human_mean_price,llm_mean_trades,human_ce_trades,ci_method
+1,hermes3,6,17.482,1.943,16.113,18.833,14.49,3.33,16,bootstrap_10000
+2,hermes3,11,17.271,1.542,16.398,18.144,14.1,4.0,16,bootstrap_10000
+3,hermes3,14,15.22,1.311,14.631,15.952,13.5,2.43,16,bootstrap_10000

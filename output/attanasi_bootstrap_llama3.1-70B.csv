@@ -1,0 +1,3 @@
+period,model,n_runs,llm_mean_price,llm_sd_price,llm_ci_lo,llm_ci_hi,human_mean_price,llm_mean_trades,human_ce_trades,ci_method
+1,llama3.1-70B,19,14.715,0.573,14.471,14.968,14.49,14.89,16,bootstrap_10000
+2,llama3.1-70B,17,14.743,0.505,14.51,14.981,14.1,15.47,16,bootstrap_10000
