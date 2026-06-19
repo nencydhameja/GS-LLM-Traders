@@ -1,0 +1,8 @@
+condition,arm,memory,persona,n_runs,slope_beta,slope_se,slope_t,P3_minus_P1,P3m1_se,P3m1_t,slope_sig_5pct,direction
+baseline,memory ablation,baseline,none,30,0.1803,0.0729,2.48,0.3573,0.1454,2.46,yes,anti-converge (drifts AWAY from CE)
+baseline_replicate,memory ablation,baseline,none,30,0.1834,0.0533,3.44,0.3639,0.1063,3.42,yes,anti-converge (drifts AWAY from CE)
+refined,memory ablation,refined,none,30,0.1382,0.0619,2.23,0.2763,0.1238,2.23,yes,anti-converge (drifts AWAY from CE)
+persona_undergrad_econ,persona ablation,baseline,undergrad_econ,30,0.2164,0.0544,3.97,0.4299,0.1082,3.97,yes,anti-converge (drifts AWAY from CE)
+persona_grad_econ,persona ablation,baseline,grad_econ,30,0.3519,0.0454,7.75,0.7,0.0908,7.71,yes,anti-converge (drifts AWAY from CE)
+persona_undergrad_human,persona ablation,baseline,undergrad_human,30,0.0591,0.0847,0.7,0.1183,0.1679,0.7,no,anti-converge (drifts AWAY from CE)
+HUMANS,benchmark,n/a,n/a,,-0.495,,,-0.99,,,,converge (TOWARD CE)
