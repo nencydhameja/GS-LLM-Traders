@@ -1388,7 +1388,16 @@ def main():
     # Aggregate across all successful runs
     if len(completed_seeds) > 1:
         all_run_results = _load_results_from_master(master_path)
-        _print_aggregate(all_run_results, args.model + mem_suffix, output_dir)
+        # Tag the bootstrap summary with the FULL condition (dial/temp/persona),
+        # mirroring the master/progress filenames. Previously only mem_suffix was
+        # used, so every persona/dial/temperature run shared one filename
+        # (attanasi_bootstrap_<model>.csv) and silently overwrote the others.
+        persona_suffix = f"_{args.persona}" if args.persona else ""
+        _print_aggregate(
+            all_run_results,
+            args.model + mem_suffix + dial_suffix + temp_suffix + persona_suffix,
+            output_dir,
+        )
 
     # Clean up progress file when all runs complete
     if len(completed_seeds) >= args.runs:
