@@ -1,12 +1,14 @@
 section,condition,P1,P2,P3,P3_minus_P1
-mean price,Humans (Table B.1),14.49,14.1,13.5,-0.99
-mean price,LLM baseline,14.409,14.745,14.786,0.377
-mean price,LLM refined memory,14.448,14.605,14.725,0.277
-mean price,LLM persona: undergrad_econ,14.458,14.782,14.885,0.427
-mean price,LLM persona: grad_econ,14.168,14.722,14.906,0.738
-mean price,LLM persona: undergrad_human,14.905,14.973,15.041,0.136
-gap vs human,LLM baseline,-0.081,0.645,1.286,1.367
-gap vs human,LLM refined memory,-0.042,0.505,1.225,1.267
-gap vs human,LLM persona: undergrad_econ,-0.032,0.682,1.385,1.417
-gap vs human,LLM persona: grad_econ,-0.322,0.622,1.406,1.728
-gap vs human,LLM persona: undergrad_human,0.415,0.873,1.541,1.126
+mean price,HUMANS,14.49,14.1,13.5,-0.99
+mean price,baseline,14.409,14.745,14.786,0.377
+mean price,refined,14.448,14.605,14.725,0.277
+mean price,baseline_replicate,14.465,14.771,14.843,0.378
+mean price,persona_grad_econ,14.168,14.722,14.906,0.738
+mean price,persona_undergrad_econ,14.458,14.782,14.885,0.427
+mean price,persona_undergrad_human,14.905,14.973,15.041,0.136
+gap vs human,baseline,-0.081,0.645,1.286,1.367
+gap vs human,refined,-0.042,0.505,1.225,1.267
+gap vs human,baseline_replicate,-0.025,0.671,1.343,1.368
+gap vs human,persona_grad_econ,-0.322,0.622,1.406,1.728
+gap vs human,persona_undergrad_econ,-0.032,0.682,1.385,1.417
+gap vs human,persona_undergrad_human,0.415,0.873,1.541,1.126

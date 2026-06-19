@@ -1,22 +1,22 @@
-condition,arm,memory,persona,period,n_runs,mean_price,sd_price,ci_lo,ci_hi,mean_trades,human_price,gap_vs_human,dev_from_CE_mid
-baseline,memory ablation,baseline,none,1,30,14.409,0.488,14.235,14.576,15.77,14.49,-0.081,1.909
-baseline,memory ablation,baseline,none,2,30,14.745,0.502,14.575,14.927,15.4,14.1,0.645,2.245
-baseline,memory ablation,baseline,none,3,30,14.786,0.575,14.584,14.989,14.8,13.5,1.286,2.286
-baseline_replicate,memory ablation,baseline,none,1,30,14.465,0.42,14.315,14.612,15.77,14.49,-0.025,1.965
-baseline_replicate,memory ablation,baseline,none,2,30,14.771,0.549,14.582,14.97,15.3,14.1,0.671,2.271
-baseline_replicate,memory ablation,baseline,none,3,30,14.843,0.439,14.691,14.999,14.63,13.5,1.343,2.343
-refined,memory ablation,refined,none,1,30,14.448,0.513,14.27,14.633,15.67,14.49,-0.042,1.948
-refined,memory ablation,refined,none,2,30,14.605,0.461,14.436,14.762,15.83,14.1,0.505,2.105
-refined,memory ablation,refined,none,3,30,14.725,0.447,14.566,14.88,15.53,13.5,1.225,2.225
-persona_undergrad_econ,persona ablation,baseline,undergrad_econ,1,30,14.458,0.502,14.285,14.634,15.67,14.49,-0.032,1.958
-persona_undergrad_econ,persona ablation,baseline,undergrad_econ,2,30,14.782,0.347,14.662,14.908,15.73,14.1,0.682,2.282
-persona_undergrad_econ,persona ablation,baseline,undergrad_econ,3,30,14.885,0.367,14.763,15.02,14.6,13.5,1.385,2.385
-persona_grad_econ,persona ablation,baseline,grad_econ,1,30,14.168,0.418,14.025,14.317,15.83,14.49,-0.322,1.668
-persona_grad_econ,persona ablation,baseline,grad_econ,2,30,14.722,0.481,14.555,14.892,15.67,14.1,0.622,2.222
-persona_grad_econ,persona ablation,baseline,grad_econ,3,30,14.906,0.545,14.722,15.104,14.93,13.5,1.406,2.406
-persona_undergrad_human,persona ablation,baseline,undergrad_human,1,30,14.905,0.565,14.71,15.102,15.23,14.49,0.415,2.405
-persona_undergrad_human,persona ablation,baseline,undergrad_human,2,30,14.973,0.423,14.828,15.121,14.4,14.1,0.873,2.473
-persona_undergrad_human,persona ablation,baseline,undergrad_human,3,30,15.041,0.552,14.845,15.233,12.53,13.5,1.541,2.541
-HUMANS,benchmark,n/a,n/a,1,,14.49,,,,16,14.49,0.0,1.99
-HUMANS,benchmark,n/a,n/a,2,,14.1,,,,16,14.1,0.0,1.6
-HUMANS,benchmark,n/a,n/a,3,,13.5,,,,16,13.5,0.0,1.0
+condition,period,n_runs,mean_price,sd_price,ci_lo,ci_hi,mean_trades,human_price,gap_vs_human
+baseline,1,30,14.409,0.488,14.235,14.576,15.77,14.49,-0.081
+baseline,2,30,14.745,0.502,14.575,14.927,15.4,14.1,0.645
+baseline,3,30,14.786,0.575,14.584,14.989,14.8,13.5,1.286
+refined,1,30,14.448,0.513,14.27,14.633,15.67,14.49,-0.042
+refined,2,30,14.605,0.461,14.436,14.762,15.83,14.1,0.505
+refined,3,30,14.725,0.447,14.566,14.88,15.53,13.5,1.225
+baseline_replicate,1,30,14.465,0.42,14.315,14.612,15.77,14.49,-0.025
+baseline_replicate,2,30,14.771,0.549,14.582,14.97,15.3,14.1,0.671
+baseline_replicate,3,30,14.843,0.439,14.691,14.999,14.63,13.5,1.343
+persona_grad_econ,1,30,14.168,0.418,14.025,14.317,15.83,14.49,-0.322
+persona_grad_econ,2,30,14.722,0.481,14.555,14.892,15.67,14.1,0.622
+persona_grad_econ,3,30,14.906,0.545,14.722,15.104,14.93,13.5,1.406
+persona_undergrad_econ,1,30,14.458,0.502,14.285,14.634,15.67,14.49,-0.032
+persona_undergrad_econ,2,30,14.782,0.347,14.662,14.908,15.73,14.1,0.682
+persona_undergrad_econ,3,30,14.885,0.367,14.763,15.02,14.6,13.5,1.385
+persona_undergrad_human,1,30,14.905,0.565,14.71,15.102,15.23,14.49,0.415
+persona_undergrad_human,2,30,14.973,0.423,14.828,15.121,14.4,14.1,0.873
+persona_undergrad_human,3,30,15.041,0.552,14.845,15.233,12.53,13.5,1.541
+HUMANS,1,,14.49,,,,16,14.49,0.0
+HUMANS,2,,14.1,,,,16,14.1,0.0
+HUMANS,3,,13.5,,,,16,13.5,0.0
