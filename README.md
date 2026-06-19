@@ -14,6 +14,25 @@ We replace human subjects with LLM agents and compare trading behavior across 5 
 | 4 | Cartel with quotas | Not started |
 | 5 | Monopoly (1 seller, 6 buyers) | Not started |
 
+### Ablation / Sweep Progress (gemma3-27b, promaxgb10)
+
+| Step | Script | Status | Notes |
+|------|--------|--------|-------|
+| 1 | `run_human_baseline.sh` | **Complete** | Committed 2026-06-08 |
+| 2 | `run_memory_ablation.sh` | **Complete** | Committed 2026-06-09 |
+| 3 | `run_persona_ablation.sh` | **Complete** | Committed 2026-06-11 |
+| 4 | `run_dial_risk_aversion.sh` | **Running** (PID 1047545) | Started 2026-06-19; via `batch/run_queue_step4.sh` |
+| 5 | `run_dial_aggressiveness.sh` | Pending | Queued |
+| 6 | `run_dial_profit_orientation.sh` | Pending | Queued |
+| 7 | `run_temperature_sweep.sh` | Pending | Queued |
+| 8 | `run_full_factorial.sh` | Pending | Queued |
+| 9 | `run_human_baseline_all_models.sh` | Pending | Queued |
+
+**Queue runner:** `nohup bash batch/run_queue_step4.sh gemma3-27b 30 42 > logs/queue_step4_*.log 2>&1 &`
+Completion emails sent to dr.duus@gmail.com and ndhamej1@binghamton.edu after each step.
+
+**Previous crash (2026-06-11):** Queue died at start of step 4 because stale progress `.json` files committed from Nancy Dhameja's MacBook had `master_path` pointing to `/Users/nencydhameja/...`. Fixed 2026-06-19 by deleting all stale progress files and restarting from step 4.
+
 ## Experimental Design
 
 Replicates the paper's Phase 1 (Perfect Competition):
