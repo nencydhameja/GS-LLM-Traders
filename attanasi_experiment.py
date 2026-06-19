@@ -1265,6 +1265,28 @@ def main():
         batch_timestamp = progress["batch_timestamp"]
         completed_seeds = set(progress["completed_seeds"])
         master_path = Path(progress["master_path"])
+        # The stored master_path is absolute and may come from a checkpoint
+        # committed on a different machine (e.g. a laptop path resumed on a
+        # server). If it doesn't resolve here, relocate by basename to the
+        # local output dir so --resume works cross-machine instead of crashing
+        # with FileNotFoundError when appending rows.
+        if not master_path.exists():
+            relocated = output_dir / master_path.name
+            if relocated.exists():
+                print(f"  Stored master_path not found here; using local copy "
+                      f"{relocated}")
+                master_path = relocated
+            else:
+                # Neither the stored path nor a local copy exists, so the
+                # completed-seed rows are gone. Reset progress and recreate a
+                # fresh master CSV rather than crash or silently skip seeds
+                # whose data no longer exists.
+                print(f"  WARNING: master CSV missing at stored path and "
+                      f"locally; resetting progress and recreating {relocated}")
+                master_path = relocated
+                completed_seeds = set()
+                with open(master_path, "w", newline="") as f:
+                    csv.DictWriter(f, fieldnames=master_fields).writeheader()
         print(f"Resuming batch {batch_timestamp}: "
               f"{len(completed_seeds)}/{args.runs} runs already completed")
     else:
