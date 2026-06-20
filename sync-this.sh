@@ -13,9 +13,23 @@ case "$HOST" in
     rsync -av apape2.rc.binghamton.edu:~/zit/GS-LLM-Traders/logs/   "$REPO/logs/"
     ;;
   promaxgb10-4be9*)
+    # apape2 has no .git — rsync to apape1 then commit+push from there
     echo "=== On apape2: pushing output/ and logs/ to apape1 ==="
     rsync -av "$REPO/output/" apape1.rc.binghamton.edu:~/zit/GS-LLM-Traders/output/
     rsync -av "$REPO/logs/"   apape1.rc.binghamton.edu:~/zit/GS-LLM-Traders/logs/
+    COMMIT_MSG="Sync output and logs from $HOST $(date '+%Y-%m-%d %H:%M')"
+    echo "=== Committing and pushing from apape1 ==="
+    ssh apape1.rc.binghamton.edu "
+      set -e
+      cd ~/zit/GS-LLM-Traders
+      git status --short
+      git add output/ logs/
+      git diff --cached --stat
+      git commit -m '$COMMIT_MSG' || echo '(nothing new to commit)'
+      git push
+      echo '=== Done ==='
+    "
+    exit 0
     ;;
   *)
     echo "ERROR: Unknown host '$HOST'. Expected promaxgb10-4ae4 (apape1) or promaxgb10-4be9 (apape2)." >&2

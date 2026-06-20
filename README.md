@@ -80,7 +80,7 @@ Not all 28 agents are called each step: buyers (capacity=1) drop out once they t
 
 At **~3.2 sec per call** (528 calls × 3.2 s ≈ 28 min), the bottleneck is the GB10's memory bandwidth (273 GB/s LPDDR5X), not compute. For a 27B Q4_K_M model (17 GB), theoretical generation throughput is 273/17 ≈ 16 tok/s; real-world Ollama achieves roughly 8–13 tok/s. The dominant cost is **prefill** (encoding the ~500–1500 token context each call), not generation (responses are 1–5 tokens). This is consistent with observed L4-class hardware (~7–8 tok/s under standard Ollama Q4_K_M), and with community reports of the DGX Spark being "painfully slow" under Ollama's standard CUDA backend vs. NVFP4-optimized inference. The 3.2 sec/call figure is expected and not a sign of misconfiguration.
 
-**Potential speedup:** Ollama's KV cache would amortize repeated system-prompt prefill across calls from the same agent (the system prompt is identical for all calls within a period). Enabling prefix caching could reduce prefill cost by 50–70%, potentially cutting per-run time to ~10–15 min. Not yet tested.
+**Potential speedup:** llama-cpp-python with `flash_attn: true` should reduce prefill cost significantly vs. Ollama (whose flash-attention status is unknown). A benchmark comparing both backends is running on apape2 (launched 2026-06-19); results will arrive by email and be committed automatically via `sync-this.sh`. See `benchmark/run_backend_benchmark.sh`.
 
 ---
 
