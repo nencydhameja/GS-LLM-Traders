@@ -84,22 +84,22 @@ At **~3.2 sec per call** (528 calls × 3.2 s ≈ 28 min), the bottleneck is the 
 Goal: determine whether llama-cpp-python (with `flash_attn: true`) is faster than Ollama for the attanasi workload, to decide if switching backends is worth the setup cost.
 
 
-Ollama benchmark completed on apape2. llama-cpp-python benchmark failed and needs a fix before re-running. Results synced to `logs/backend_benchmark_20260619_225316.json` (2026-06-20).
+Ollama benchmark completed on apape2. llama-cpp-python benchmark pending — see below. Results synced to `logs/backend_benchmark_20260619_225316.json` (2026-06-20).
 
 | Backend | avg s/call | min | max | prefill tok/s | gen tok/s | prompt tok |
 |---------|-----------|-----|-----|--------------|-----------|------------|
 | Ollama v0.30.10 | 2.43 | 0.75 | 17.05 | 3704 | 16.2 | 625 |
-| llama-cpp-python 0.3.x | — | — | — | — | — | — (failed) |
+| llama-cpp-python 0.3.31 | — | — | — | — | — | — (pending) |
 
 Note: high variance in Ollama (sd=5.14) likely reflects cold-start on first call and growing context. The prefill speed of 3704 tok/s is much faster than earlier per-run estimates suggested — the 28 min/run figure reflects 528 calls × ~2–3s overhead each, not slow inference.
 
-**llama-cpp-python failure:** `key not found in model: gemma3.attention.layer_norm_rms_epsilon` — the installed version of llama-cpp-python predates gemma3 architecture support. Fix: upgrade the venv at `~/llms/venv` on apape2:
+**llama-cpp-python failure (resolved 2026-06-20):** Root cause was that Ollama's `gemma3:27b` blob is the **multimodal** variant (contains `gemma3.vision.*` keys); llama-cpp-python's text server can't load it regardless of version. Fix: download the text-only GGUF from HuggingFace:
 ```bash
-PATH=/usr/local/cuda/bin:$PATH \
-CMAKE_ARGS="-DGGML_CUDA=on -DCMAKE_CUDA_ARCHITECTURES=native" \
-~/llms/venv/bin/pip install "llama-cpp-python[server]" --upgrade
+# On apape2 — already running as of 2026-06-20
+wget -c "https://huggingface.co/bartowski/google_gemma-3-27b-it-GGUF/resolve/main/google_gemma-3-27b-it-Q4_K_M.gguf" \
+  -O ~/llms/models/gemma-3-27b-it-Q4_K_M.gguf
 ```
-Then re-run `benchmark/run_backend_benchmark.sh` (it will skip Ollama and only run llama-cpp-python if Ollama results already exist — or just re-run both).
+`benchmark/llama_cpp_gemma3.yaml` updated to point to `~/llms/models/gemma-3-27b-it-Q4_K_M.gguf`. Re-run `benchmark/run_backend_benchmark.sh` after download completes.
 
 **Sync / SSH — resolved (2026-06-20):** Both directions working. `authorized_keys` on apape1 fixed (was root-owned); apape2 key appended. `sync-this.sh` confirmed working.
 
