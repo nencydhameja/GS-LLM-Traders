@@ -81,6 +81,8 @@ Not all 28 agents are called each step: buyers (capacity=1) drop out once they t
 At **~3.2 sec per call** (528 calls × 3.2 s ≈ 28 min), the bottleneck is the GB10's memory bandwidth (273 GB/s LPDDR5X), not compute. For a 27B Q4_K_M model (17 GB), theoretical generation throughput is 273/17 ≈ 16 tok/s; real-world Ollama achieves roughly 8–13 tok/s. The dominant cost is **prefill** (encoding the ~500–1500 token context each call), not generation (responses are 1–5 tokens). This is consistent with observed L4-class hardware (~7–8 tok/s under standard Ollama Q4_K_M), and with community reports of the DGX Spark being "painfully slow" under Ollama's standard CUDA backend vs. NVFP4-optimized inference. The 3.2 sec/call figure is expected and not a sign of misconfiguration.
 
 **Backend benchmark — partial results (2026-06-19):**
+Goal: determine whether llama-cpp-python (with `flash_attn: true`) is faster than Ollama for the attanasi workload, to decide if switching backends is worth the setup cost.
+
 
 Ollama benchmark completed on apape2. llama-cpp-python benchmark failed and needs a fix before re-running. Results are in `logs/backend_benchmark_*.json` on apape2 (not yet synced due to SSH issues — see below).
 
