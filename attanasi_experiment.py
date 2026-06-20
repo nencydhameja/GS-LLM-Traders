@@ -39,6 +39,8 @@ from datetime import datetime
 from pathlib import Path
 from typing import Dict, List, Optional, Tuple
 
+import socket
+
 import requests
 import yaml
 
@@ -1165,6 +1167,21 @@ def main():
         available = ", ".join(config["llm_models"].keys())
         print(f"ERROR: Unknown model '{args.model}'. Available: {available}")
         return
+
+    # On apape1/apape2, route inference to local Ollama instead of Binghamton server.
+    # apape1.rc.binghamton.edu == promaxgb10-4ae4, apape2.rc.binghamton.edu == promaxgb10-4be9
+    _LOCAL_HOSTS = {
+        "apape1.rc.binghamton.edu", "apape2.rc.binghamton.edu",
+        "promaxgb10-4ae4", "promaxgb10-4be9",
+    }
+    _hostname = socket.gethostname()
+    if _hostname in _LOCAL_HOSTS or socket.getfqdn() in _LOCAL_HOSTS:
+        _local_url = "http://localhost:11434/v1/chat/completions"
+        config["llm_models"][args.model]["url"] = _local_url
+        config["llm_models"][args.model].pop("api_key", None)
+        print(f"Inference: local Ollama on {_hostname} ({_local_url})")
+    else:
+        print(f"Inference: {config['llm_models'][args.model]['url']}")
 
     # Override temperature if specified
     if args.temperature is not None:
