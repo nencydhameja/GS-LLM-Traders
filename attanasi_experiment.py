@@ -1168,18 +1168,21 @@ def main():
         print(f"ERROR: Unknown model '{args.model}'. Available: {available}")
         return
 
-    # On apape1/apape2, route inference to local Ollama instead of Binghamton server.
+    # On apape1/apape2, route inference to local llama-cpp-python instead of Binghamton server.
     # apape1.rc.binghamton.edu == promaxgb10-4ae4, apape2.rc.binghamton.edu == promaxgb10-4be9
+    # llama-cpp-python serves OpenAI-compatible API on port 8081, model alias "local-gguf".
+    # GGUF: ~/llms/models/gemma-3-27b-it-Q4_K_M.gguf (text-only bartowski Q4_K_M, 16 GB)
     _LOCAL_HOSTS = {
         "apape1.rc.binghamton.edu", "apape2.rc.binghamton.edu",
         "promaxgb10-4ae4", "promaxgb10-4be9",
     }
     _hostname = socket.gethostname()
     if _hostname in _LOCAL_HOSTS or socket.getfqdn() in _LOCAL_HOSTS:
-        _local_url = "http://localhost:11434/v1/chat/completions"
+        _local_url = "http://localhost:8081/v1/chat/completions"
         config["llm_models"][args.model]["url"] = _local_url
+        config["llm_models"][args.model]["model"] = "local-gguf"
         config["llm_models"][args.model].pop("api_key", None)
-        print(f"Inference: local Ollama on {_hostname} ({_local_url})")
+        print(f"Inference: local llama-cpp-python on {_hostname} ({_local_url})")
     else:
         print(f"Inference: {config['llm_models'][args.model]['url']}")
 

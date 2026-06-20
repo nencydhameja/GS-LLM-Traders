@@ -39,14 +39,8 @@ PYEOF
 
 commit_and_push() {
     local label="$1"
-    git add output/ logs/ 2>/dev/null || true
-    if ! git diff --cached --quiet; then
-        git commit -m "Add output: ${label} on $(date +%Y-%m-%d)"
-        git push
-        echo "Committed and pushed: ${label}"
-    else
-        echo "Nothing new to commit for: ${label}"
-    fi
+    echo "Syncing to apape1 and pushing to GitHub: ${label}"
+    bash "$(dirname "$0")/../sync-this.sh"
 }
 
 run_script() {
@@ -69,7 +63,7 @@ run_script() {
 
 === ${label} — COMPLETE ===
 
-Machine:   promaxgb10-4ae4
+Machine:   $(hostname)
 Model:     ${MODEL}
 Runs:      ${RUNS} (seed ${SEED})
 Finished:  $(date)
@@ -102,7 +96,7 @@ if [[ -n "$WAIT_PID" ]] && kill -0 "$WAIT_PID" 2>/dev/null; then
 
 === Human Baseline (run_human_baseline.sh) — COMPLETE ===
 
-Machine:   promaxgb10-4ae4
+Machine:   $(hostname)
 Model:     ${MODEL}
 Runs:      ${RUNS} (seed ${SEED})
 Finished:  $(date)
@@ -120,15 +114,41 @@ Starting next script: run_memory_ablation.sh (~18 h)
 This email was generated automatically by Claude AI running on promaxgb10-4ae4."
 fi
 
-# Run all remaining scripts in order
-run_script "run_memory_ablation.sh"       "Memory Ablation"
-run_script "run_persona_ablation.sh"      "Persona Ablation"
-run_script "run_dial_risk_aversion.sh"    "Dial: Risk Aversion"
-run_script "run_dial_aggressiveness.sh"   "Dial: Aggressiveness"
-run_script "run_dial_profit_orientation.sh" "Dial: Profit Orientation"
-run_script "run_temperature_sweep.sh"     "Temperature Sweep"
-run_script "run_full_factorial.sh"        "Full Factorial"
+# Start llama-cpp-python server if not already running
+LLAMA_SERVER_PID=""
+if ! curl -sf http://localhost:8081/v1/models > /dev/null 2>&1; then
+    echo "=== Starting llama-cpp-python server ==="
+    ~/llms/venv/bin/python -m llama_cpp.server \
+        --config_file ~/zit/GS-LLM-Traders/benchmark/llama_cpp_gemma3.yaml \
+        > /tmp/llama_cpp_server.log 2>&1 &
+    LLAMA_SERVER_PID=$!
+    echo "Waiting for server (up to 5 min, PID ${LLAMA_SERVER_PID})..."
+    for i in $(seq 1 30); do
+        curl -sf http://localhost:8081/v1/models > /dev/null && echo "Server ready after $((i*10))s." && break
+        if ! kill -0 "$LLAMA_SERVER_PID" 2>/dev/null; then
+            echo "ERROR: llama-cpp-python server died. Check /tmp/llama_cpp_server.log" >&2
+            exit 1
+        fi
+        sleep 10
+    done
+else
+    echo "=== llama-cpp-python server already running on port 8081 ==="
+fi
+
+# Run all remaining scripts in order (full factorial last — it's the lion's share)
+run_script "run_memory_ablation.sh"           "Memory Ablation"
+run_script "run_persona_ablation.sh"          "Persona Ablation"
+run_script "run_dial_risk_aversion.sh"        "Dial: Risk Aversion"
+run_script "run_dial_aggressiveness.sh"       "Dial: Aggressiveness"
+run_script "run_dial_profit_orientation.sh"   "Dial: Profit Orientation"
+run_script "run_temperature_sweep.sh"         "Temperature Sweep"
 run_script "run_human_baseline_all_models.sh" "Human Baseline (All Models)"
+run_script "run_full_factorial.sh"            "Full Factorial"
+
+# Shut down llama-cpp-python server if we started it
+if [[ -n "$LLAMA_SERVER_PID" ]] && kill -0 "$LLAMA_SERVER_PID" 2>/dev/null; then
+    kill "$LLAMA_SERVER_PID" && echo "llama-cpp-python server stopped."
+fi
 
 send_email \
     "GS-LLM-Traders: ALL RUNS COMPLETE on promaxgb10" \
@@ -136,7 +156,7 @@ send_email \
 
 === ALL GS-LLM-Traders batch runs COMPLETE ===
 
-Machine:   promaxgb10-4ae4
+Machine:   $(hostname)
 Finished:  $(date)
 
 All scripts completed and output pushed to:
