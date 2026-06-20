@@ -135,9 +135,8 @@ else
     echo "=== llama-cpp-python server already running on port 8081 ==="
 fi
 
-# Run all remaining scripts in order (full factorial last — it's the lion's share)
-run_script "run_memory_ablation.sh"           "Memory Ablation"
-run_script "run_persona_ablation.sh"          "Persona Ablation"
+# Steps 1-3 (human baseline, memory ablation, persona ablation) already complete — skip.
+# Run remaining scripts in order (full factorial last — it's the lion's share)
 run_script "run_dial_risk_aversion.sh"        "Dial: Risk Aversion"
 run_script "run_dial_aggressiveness.sh"       "Dial: Aggressiveness"
 run_script "run_dial_profit_orientation.sh"   "Dial: Profit Orientation"
