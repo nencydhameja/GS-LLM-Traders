@@ -233,9 +233,54 @@ Notify on: smoke-test result, each script completion, and any fatal error.
 
 ---
 
-### NEXT ACTION — Finish backend benchmark, then resume Step 4 on apape2
+### NEXT ACTION — Rewire to llama-cpp-python, then resume Step 4
 
-**Step 3 complete (2026-06-20).** llama-cpp-python benchmarked at 0.43s/call vs Ollama 2.47s/call. Decision: switch to llama-cpp-python. Results in `logs/backend_benchmark_20260620_102323.json`. TODO: wire llama-cpp-python into `attanasi_experiment.py` before running step 4 (or run step 4 with Ollama and switch for steps 5+).
+**Step 3 complete (2026-06-20).** llama-cpp-python benchmarked at 0.43s/call vs Ollama 2.47s/call (~5.7× faster). Decision: switch to llama-cpp-python before running step 4. Results in `logs/backend_benchmark_20260620_102323.json`.
+
+#### Rewire plan (do before step 4)
+
+The experiment already uses the OpenAI-compatible `/v1/chat/completions` API — llama-cpp-python serves the same endpoint on port 8081 with model alias `local-gguf`. The change is small.
+
+**File 1: `attanasi_experiment.py` lines ~1171–1182** — change the local auto-detect block:
+
+```python
+# BEFORE (Ollama):
+_local_url = "http://localhost:11434/v1/chat/completions"
+config["llm_models"][args.model]["url"] = _local_url
+config["llm_models"][args.model].pop("api_key", None)
+print(f"Inference: local Ollama on {_hostname} ({_local_url})")
+
+# AFTER (llama-cpp-python):
+_local_url = "http://localhost:8081/v1/chat/completions"
+config["llm_models"][args.model]["url"] = _local_url
+config["llm_models"][args.model]["model"] = "local-gguf"
+config["llm_models"][args.model].pop("api_key", None)
+print(f"Inference: local llama-cpp-python on {_hostname} ({_local_url})")
+```
+
+**File 2: `batch/run_dial_risk_aversion.sh` (and all other batch scripts)** — add a server startup block before the experiment loop:
+
+```bash
+# Start llama-cpp-python server if not already running
+if ! curl -sf http://localhost:8081/v1/models > /dev/null 2>&1; then
+    echo "Starting llama-cpp-python server..."
+    ~/llms/venv/bin/python -m llama_cpp.server \
+        --config_file ~/zit/GS-LLM-Traders/benchmark/llama_cpp_gemma3.yaml \
+        > /tmp/llama_cpp_server.log 2>&1 &
+    LLAMA_PID=$!
+    for i in $(seq 1 30); do
+        curl -sf http://localhost:8081/v1/models > /dev/null && break
+        sleep 10
+    done
+    echo "llama-cpp-python server ready (PID $LLAMA_PID)"
+fi
+```
+
+**Smoke test after rewire** (run on apape2 before any long job):
+```bash
+python3 attanasi_experiment.py --model gemma3-27b --steps 3 --runs 1 --seed 0
+# Expect: "Inference: local llama-cpp-python" in header, CSV output, no HTTP errors
+```
 
 **Step 4 — Resume `run_dial_risk_aversion.sh`** (was interrupted at 11/30 seeds for `very_averse`):
 
