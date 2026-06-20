@@ -51,23 +51,20 @@ We replace human subjects with LLM agents and compare trading behavior across 5 
 
 Both now correctly use the GB10 GPU via the `cuda_v13` backend (compute 12.1). v0.23.2 only had `cuda_v12` which does not support cc 12.1 and silently fell back to CPU.
 
-### Task 3 — Recalculate expected runtime for local inference ⏳ IN PROGRESS (2026-06-19)
+### Task 3 — Recalculate expected runtime for local inference ✓ DONE (2026-06-19)
 
 **CPU benchmark (2026-06-19, apape1, Ollama v0.23.2 — GPU not detected, ran on CPU):**
 1 run, 30 steps, seed 0 → **181 min 41 sec**. This is the CPU baseline, not the target.
 
 **GPU benchmark (2026-06-19, apape2, Ollama v0.30.10 — GB10 GPU active):**
-Running now. Log: `apape2:~/zit/GS-LLM-Traders/logs/benchmark_apape2_gpu_20260619_211930.log`
-Email will be sent to dr.duus@gmail.com and ndhamej1@binghamton.edu on completion with full results.
-Expected completion: **~10–30 minutes** from benchmark start (GPU is ~10–30× faster than CPU).
+Complete. Log: `logs/benchmark_apape2_gpu_20260619_211930.log` (1 run, 3 periods × 30 steps, seed 0).
+Started 21:19:30, finished 21:47:42 → **28 min 12 sec**.
 
 | Baseline | Min/run | Notes |
 |----------|---------|-------|
 | Binghamton server (prior estimate) | ~18 min | Historical, remote inference |
 | apape1 CPU (Ollama v0.23.2, GPU not detected) | ~182 min | **Not representative** |
-| apape2 GPU (Ollama v0.30.10, GB10 cuda_v13) | **TBD** | Benchmark running — update when email arrives |
-
-**Action when email arrives:** pull the `real` time from the log, update the table above and the Execution Plan estimates below.
+| apape2 GPU (Ollama v0.30.10, GB10 cuda_v13) | **~28 min** | Benchmark complete 2026-06-19 |
 
 ---
 
@@ -225,16 +222,16 @@ Expected: CSV output in `output/`, `Inference: local Ollama` in header, no HTTP 
 
 ### Subsequent runs (in order, all on apape2)
 
-| Order | Script | Runs | Est. time (GPU TBD) | What it tests |
-|-------|--------|------|---------------------|---------------|
-| 4 | `run_dial_risk_aversion.sh` | 150 | TBD | 5 risk-aversion levels |
-| 5 | `run_dial_aggressiveness.sh` | 150 | TBD | 5 aggressiveness levels |
-| 6 | `run_dial_profit_orientation.sh` | 150 | TBD | 5 profit-orientation levels |
-| 7 | `run_temperature_sweep.sh` | 150 | TBD | 5 temperature levels |
-| 8 | `run_full_factorial.sh` | 625 | TBD | 125 dial×temp combos × 5 runs |
-| 9 | `run_human_baseline_all_models.sh` | 300 | TBD | Human baseline across all 10 models |
+| Order | Script | Runs | Est. time (@28 min/run) | What it tests |
+|-------|--------|------|------------------------|---------------|
+| 4 | `run_dial_risk_aversion.sh` | 150 | ~70 h | 5 risk-aversion levels |
+| 5 | `run_dial_aggressiveness.sh` | 150 | ~70 h | 5 aggressiveness levels |
+| 6 | `run_dial_profit_orientation.sh` | 150 | ~70 h | 5 profit-orientation levels |
+| 7 | `run_temperature_sweep.sh` | 150 | ~70 h | 5 temperature levels |
+| 8 | `run_full_factorial.sh` | 625 | ~292 h | 125 dial×temp combos × 5 runs |
+| 9 | `run_human_baseline_all_models.sh` | 300 | ~140 h | Human baseline across all 10 models |
 
-**Time estimates are TBD** — waiting on GPU benchmark result (see Task 3 above). At 18 min/run (server baseline), total is ~514 h. GPU local speed will differ; update when benchmark email arrives.
+**Total: ~712 h** (1,525 runs × 28 min/run on apape2 GPU). Steps 4–7 run in sequence; steps 8–9 queued after.
 
 For each script: use `--resume` if interrupted. After completion, run `sync-this.sh` from apape1 to commit and push.
 
