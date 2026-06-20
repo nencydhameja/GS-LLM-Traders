@@ -1,0 +1,34 @@
+[
+  {
+    "label": "ollama",
+    "url": "http://localhost:11434/v1/chat/completions",
+    "model": "gemma3:27b",
+    "mean_s": 2.471,
+    "median_s": 0.807,
+    "min_s": 0.784,
+    "max_s": 17.448,
+    "stdev_s": 5.263,
+    "calls": 10,
+    "prompt_tokens": 625,
+    "completion_tokens": 4,
+    "ollama_native": {
+      "prefill_tok_s": 3698.1,
+      "generation_tok_s": 16.0,
+      "prompt_eval_count": 625,
+      "eval_count": 4
+    }
+  },
+  {
+    "label": "llama_cpp",
+    "url": "http://localhost:8081/v1/chat/completions",
+    "model": "local-gguf",
+    "mean_s": 0.43,
+    "median_s": 0.328,
+    "min_s": 0.327,
+    "max_s": 1.345,
+    "stdev_s": 0.321,
+    "calls": 10,
+    "prompt_tokens": 624,
+    "completion_tokens": 3
+  }
+]
