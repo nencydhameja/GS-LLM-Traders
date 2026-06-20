@@ -204,6 +204,13 @@ Period  LLM Price [95% CI]         Human Price  LLM Trades  CE Trades
 
 **Active run machine: apape2.** SSH in, then run from `~/zit/GS-LLM-Traders/`.
 
+**apape2 is NOT a git repo.** There is no `.git` on apape2. All code lives on apape1 and is pushed to apape2 via rsync. To deploy a script change to apape2, edit it on apape1, commit, then `rsync` the file over — do not `git pull` on apape2.
+
+```bash
+# Push a single changed file to apape2:
+rsync -av ~/zit/GS-LLM-Traders/<path> apape2.rc.binghamton.edu:~/zit/GS-LLM-Traders/<path>
+```
+
 ### Syncing output back to apape1 and git
 
 ```bash
@@ -227,9 +234,17 @@ Notify on: smoke-test result, each script completion, and any fatal error.
 
 ---
 
-### NEXT ACTION — Resume Step 4 on apape2
+### NEXT ACTION — Finish backend benchmark, then resume Step 4 on apape2
 
-Step 4 (`run_dial_risk_aversion.sh`) was interrupted at 11/30 seeds for `very_averse`. Resume it on apape2:
+**Currently in progress (2026-06-20):** Backend benchmark (step 3) running on apape2, PID 791885. The llama-cpp-python server is loading `~/llms/models/gemma-3-27b-it-Q4_K_M.gguf` (text-only bartowski Q4_K_M, 16 GB — downloaded 2026-06-20 to fix multimodal GGUF incompatibility). Check progress:
+
+```bash
+ssh apape2.rc.binghamton.edu 'tail -20 $(ls -t ~/zit/GS-LLM-Traders/logs/backend_benchmark_launcher_*.log | head -1)'
+```
+
+Once the benchmark JSON has both `ollama` and `llama_cpp` entries, update the README table and decide whether to switch backends. Then proceed to Step 4 below.
+
+**Step 4 — Resume `run_dial_risk_aversion.sh`** (was interrupted at 11/30 seeds for `very_averse`):
 
 ```bash
 ssh apape2.rc.binghamton.edu
