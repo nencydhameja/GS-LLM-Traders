@@ -21,17 +21,55 @@ We replace human subjects with LLM agents and compare trading behavior across 5 
 | 1 | `run_human_baseline.sh` | **Complete** | Committed 2026-06-08 |
 | 2 | `run_memory_ablation.sh` | **Complete** | Committed 2026-06-09 |
 | 3 | `run_persona_ablation.sh` | **Complete** | Committed 2026-06-11 |
-| 4 | `run_dial_risk_aversion.sh` | **Running** (PID 1047545) | Started 2026-06-19; via `batch/run_queue_step4.sh` |
-| 5 | `run_dial_aggressiveness.sh` | Pending | Queued |
-| 6 | `run_dial_profit_orientation.sh` | Pending | Queued |
-| 7 | `run_temperature_sweep.sh` | Pending | Queued |
+| 4 | `run_dial_risk_aversion.sh` | **Pending restart** | 11/30 done for `very_averse`; Binghamton server outage killed it. **Run fresh on apape2 with `--resume`** |
+| 5 | `run_dial_aggressiveness.sh` | Pending | Prior run data exists (Apr–May); re-running fresh |
+| 6 | `run_dial_profit_orientation.sh` | Pending | Prior run data exists (Apr–May); re-running fresh |
+| 7 | `run_temperature_sweep.sh` | Pending | Prior run data exists (Apr–May); re-running fresh |
 | 8 | `run_full_factorial.sh` | Pending | Queued |
 | 9 | `run_human_baseline_all_models.sh` | Pending | Queued |
 
-**Queue runner:** `nohup bash batch/run_queue_step4.sh gemma3-27b 30 42 > logs/queue_step4_*.log 2>&1 &`
-Completion emails sent to dr.duus@gmail.com and ndhamej1@binghamton.edu after each step.
+**Active machine: apape2** (`promaxgb10-4be9`). apape1's GPU is fully occupied by a PancsVriend `run_all_contexts.py` job started 2026-06-11 (100 runs × 1000 steps on gemma-4-31b). Do not interrupt it.
+
+**LLM backend (2026-06-19 onwards):** Local Ollama on apape2 — no longer depends on `chat.binghamton.edu`. `attanasi_experiment.py` auto-detects hostname and routes to `http://localhost:11434/v1/chat/completions`. Both machines run Ollama **v0.30.10** (upgraded 2026-06-19; v0.23.2 did not detect the GB10 GPU and ran on CPU at 10× slower speeds).
 
 **Previous crash (2026-06-11):** Queue died at start of step 4 because stale progress `.json` files committed from Nancy Dhameja's MacBook had `master_path` pointing to `/Users/nencydhameja/...`. Fixed 2026-06-19 by deleting all stale progress files and restarting from step 4.
+
+**Prior campaign (Apr–May 2026):** Steps 4–7 were run in an earlier campaign before the June restart. Output CSVs survive in `output/` under their original timestamps. Coverage was incomplete — `very_seeking` is missing from the risk-aversion sweep and `very_passive` is missing from aggressiveness — so the June re-run is authoritative. The old files are retained for reference but should not be treated as the final dataset.
+
+## Pending Tasks
+
+### Task 1 — Switch to local inference on apape1/apape2 ✓ DONE (2026-06-19)
+
+`attanasi_experiment.py` now auto-detects hostname at startup. On `apape1.rc.binghamton.edu` / `apape2.rc.binghamton.edu` (matching `promaxgb10-4ae4` / `promaxgb10-4be9`), all LLM calls are routed to `http://localhost:11434/v1/chat/completions` (local Ollama). All other hosts continue to use `chat.binghamton.edu`. No flag required.
+
+### Task 2 — Download LLMs for local inference ✓ DONE (2026-06-19)
+
+`gemma3:27b` (17 GB, Q4_K_M, ID `a418f5838eaf`) is now pulled and ready on both machines.
+
+- **apape1** (`promaxgb10-4ae4`) — Ollama **v0.30.10** system service at `/usr/local/bin/ollama`; model at `/usr/share/ollama/.ollama/models`
+- **apape2** (`promaxgb10-4be9`) — Ollama **v0.30.10** user binary at `~/.local/bin/ollama`; model at `~/.ollama/models`; start server with `nohup ~/.local/bin/ollama serve > /tmp/ollama.log 2>&1 &`
+
+Both now correctly use the GB10 GPU via the `cuda_v13` backend (compute 12.1). v0.23.2 only had `cuda_v12` which does not support cc 12.1 and silently fell back to CPU.
+
+### Task 3 — Recalculate expected runtime for local inference ⏳ IN PROGRESS (2026-06-19)
+
+**CPU benchmark (2026-06-19, apape1, Ollama v0.23.2 — GPU not detected, ran on CPU):**
+1 run, 30 steps, seed 0 → **181 min 41 sec**. This is the CPU baseline, not the target.
+
+**GPU benchmark (2026-06-19, apape2, Ollama v0.30.10 — GB10 GPU active):**
+Running now. Log: `apape2:~/zit/GS-LLM-Traders/logs/benchmark_apape2_gpu_20260619_211930.log`
+Email will be sent to dr.duus@gmail.com and ndhamej1@binghamton.edu on completion with full results.
+Expected completion: **~10–30 minutes** from benchmark start (GPU is ~10–30× faster than CPU).
+
+| Baseline | Min/run | Notes |
+|----------|---------|-------|
+| Binghamton server (prior estimate) | ~18 min | Historical, remote inference |
+| apape1 CPU (Ollama v0.23.2, GPU not detected) | ~182 min | **Not representative** |
+| apape2 GPU (Ollama v0.30.10, GB10 cuda_v13) | **TBD** | Benchmark running — update when email arrives |
+
+**Action when email arrives:** pull the `real` time from the log, update the table above and the Execution Plan estimates below.
+
+---
 
 ## Experimental Design
 
@@ -119,73 +157,84 @@ Period  LLM Price [95% CI]         Human Price  LLM Trades  CE Trades
 
 ## Execution Plan (apape @ promaxgb10)
 
-### Machine
+### Machines
 
-| Resource | Spec |
-|----------|------|
-| Host | `promaxgb10-4ae4` |
-| OS | Ubuntu (Linux 6.17, aarch64) |
-| CPU | ARM Cortex-X925 (4P) + Cortex-A725 (16E), 20 cores, 3.9 GHz max |
-| RAM | 121 GiB total, ~74 GiB available |
-| GPU | NVIDIA GB10 |
-| Operator | `apape` |
+| Resource | apape1 | apape2 |
+|----------|--------|--------|
+| Hostname | `promaxgb10-4ae4` | `promaxgb10-4be9` |
+| Ollama | v0.30.10 system service | v0.30.10 user binary (`~/.local/bin/ollama`) |
+| GPU | NVIDIA GB10 (cuda_v13, cc 12.1) | NVIDIA GB10 (cuda_v13, cc 12.1) |
+| RAM | 121 GiB unified | 121 GiB unified |
+| GPU status | **Occupied** — PancsVriend job since 2026-06-11 | **Free** — use this for runs |
+| Start Ollama | `sudo systemctl start ollama` | `nohup ~/.local/bin/ollama serve > /tmp/ollama.log 2>&1 &` |
 
-Scripts are run from this machine. All output is committed and pushed to this repo as it accumulates.
+**Active run machine: apape2.** SSH in, then run from `~/zit/GS-LLM-Traders/`.
+
+### Syncing output back to apape1 and git
+
+```bash
+# From apape1:
+bash ~/zit/GS-LLM-Traders/sync-this.sh
+```
+
+This rsyncs `output/` and `logs/` from apape2, commits, and pushes.
 
 ### Notifications
 
-Progress emails are sent to:
-- `dr.duus@gmail.com`
-- `ndhamej1@binghamton.edu`
+Progress emails to: `dr.duus@gmail.com`, `ndhamej1@binghamton.edu`
+
+Send manually:
+```bash
+python3 ~/bin/send_notify.py "Subject" "Body"  # sends to dr.duus only
+# For both recipients use inline Python (see watcher pattern below)
+```
 
 Notify on: smoke-test result, each script completion, and any fatal error.
 
 ---
 
-### Step 0 — Smoke test
+### NEXT ACTION — Resume Step 4 on apape2
 
-Before any long run, verify the stack is working end-to-end with a 1-run, 3-step dry run:
+Step 4 (`run_dial_risk_aversion.sh`) was interrupted at 11/30 seeds for `very_averse`. Resume it on apape2:
 
 ```bash
-python attanasi_experiment.py --model gemma3-27b --steps 3 --runs 1 --seed 0
+ssh apape2.rc.binghamton.edu
+cd ~/zit/GS-LLM-Traders
+
+# First rsync any existing output/ from apape1 so --resume finds the progress file
+rsync -av apape1:~/zit/GS-LLM-Traders/output/ ~/zit/GS-LLM-Traders/output/
+
+# Then resume step 4
+nohup bash batch/run_dial_risk_aversion.sh gemma3-27b 30 42 --resume \
+  > logs/dial_risk_aversion_gemma3-27b_$(date +%Y%m%d_%H%M%S).log 2>&1 &
 ```
 
-Expected: one CSV row per agent decision in `output/`, no HTTP errors. If it passes, proceed. If it fails, stop and diagnose before committing to multi-hour runs.
+After step 4 completes, run steps 5–9 in order the same way.
 
 ---
 
-### Step 1 — Human baseline (~9 h)
-
-Shortest script; establishes the primary human-comparable benchmark.
+### Step 0 — Smoke test (run on apape2 before any long job)
 
 ```bash
-chmod +x batch/*.sh
-nohup ./batch/run_human_baseline.sh gemma3-27b 30 42 > /dev/null 2>&1 &
-tail -f logs/human_baseline_gemma3-27b_*.log
+python3 attanasi_experiment.py --model gemma3-27b --steps 3 --runs 1 --seed 0
 ```
 
-**During the run:** commit and push `output/` and `logs/` files whenever new files appear (check every ~30 min).
-
-**On completion:** commit all remaining output, push, then send email to both addresses with the `results_*.txt` summary attached.
+Expected: CSV output in `output/`, `Inference: local Ollama` in header, no HTTP errors.
 
 ---
 
-### Subsequent runs (in order)
+### Subsequent runs (in order, all on apape2)
 
-Run each script only after the previous one completes and its output has been pushed.
+| Order | Script | Runs | Est. time (GPU TBD) | What it tests |
+|-------|--------|------|---------------------|---------------|
+| 4 | `run_dial_risk_aversion.sh` | 150 | TBD | 5 risk-aversion levels |
+| 5 | `run_dial_aggressiveness.sh` | 150 | TBD | 5 aggressiveness levels |
+| 6 | `run_dial_profit_orientation.sh` | 150 | TBD | 5 profit-orientation levels |
+| 7 | `run_temperature_sweep.sh` | 150 | TBD | 5 temperature levels |
+| 8 | `run_full_factorial.sh` | 625 | TBD | 125 dial×temp combos × 5 runs |
+| 9 | `run_human_baseline_all_models.sh` | 300 | TBD | Human baseline across all 10 models |
 
-| Order | Script | Approx time | What it tests |
-|-------|--------|-------------|---------------|
-| 2 | `run_memory_ablation.sh` | ~18 h | Baseline vs refined memory |
-| 3 | `run_persona_ablation.sh` | ~27 h | undergrad_econ / grad_econ / undergrad_human |
-| 4 | `run_dial_risk_aversion.sh` | ~45 h | 5 risk-aversion levels |
-| 5 | `run_dial_aggressiveness.sh` | ~45 h | 5 aggressiveness levels |
-| 6 | `run_dial_profit_orientation.sh` | ~45 h | 5 profit-orientation levels |
-| 7 | `run_temperature_sweep.sh` | ~45 h | 5 temperature levels |
-| 8 | `run_full_factorial.sh` | ~190 h | 125 dial×temp combos × 5 runs |
-| 9 | `run_human_baseline_all_models.sh` | ~90 h | Human baseline across all 10 models |
+**Time estimates are TBD** — waiting on GPU benchmark result (see Task 3 above). At 18 min/run (server baseline), total is ~514 h. GPU local speed will differ; update when benchmark email arrives.
 
-For each script: use `--resume` if interrupted, commit/push incrementally, and send a completion email with the results summary.
-
-**Total estimated wall time (sequential):** ~514 h (~21 days).
+For each script: use `--resume` if interrupted. After completion, run `sync-this.sh` from apape1 to commit and push.
 
