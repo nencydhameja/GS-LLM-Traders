@@ -14,7 +14,7 @@ RESULTS_JSON="$LOG_DIR/backend_benchmark_${TIMESTAMP}.json"
 VENV="$HOME/llms/venv"
 LLAMA_PORT=8081
 LLAMA_PID=""
-GGUF="$HOME/.ollama/models/blobs/sha256-e796792eba26c4d3b04b0ac5adb01a453dd9ec2dfd83b6c59cbf6fe5f30b0f68"
+GGUF="$HOME/llms/models/gemma-3-27b-it-Q4_K_M.gguf"
 BENCH="$REPO/benchmark/benchmark_backends.py"
 N_CALLS=10
 
