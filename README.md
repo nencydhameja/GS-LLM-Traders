@@ -84,7 +84,7 @@ At **~3.2 sec per call** (528 calls × 3.2 s ≈ 28 min), the bottleneck is the 
 Goal: determine whether llama-cpp-python (with `flash_attn: true`) is faster than Ollama for the attanasi workload, to decide if switching backends is worth the setup cost.
 
 
-Ollama benchmark completed on apape2. llama-cpp-python benchmark failed and needs a fix before re-running. Results are in `logs/backend_benchmark_*.json` on apape2 (not yet synced due to SSH issues — see below).
+Ollama benchmark completed on apape2. llama-cpp-python benchmark failed and needs a fix before re-running. Results synced to `logs/backend_benchmark_20260619_225316.json` (2026-06-20).
 
 | Backend | avg s/call | min | max | prefill tok/s | gen tok/s | prompt tok |
 |---------|-----------|-----|-----|--------------|-----------|------------|
@@ -101,10 +101,7 @@ CMAKE_ARGS="-DGGML_CUDA=on -DCMAKE_CUDA_ARCHITECTURES=native" \
 ```
 Then re-run `benchmark/run_backend_benchmark.sh` (it will skip Ollama and only run llama-cpp-python if Ollama results already exist — or just re-run both).
 
-**Sync / SSH issues to resolve:**
-- `apape2 → apape1` SSH fails: `~/.ssh/authorized_keys` on apape1 is owned by root. Need: `sudo sh -c 'echo "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIM5VyUjfEfC0h/b9IUh6X76rPG97FsDNB6tWCD7VBrxs apape@promaxgb10-4be9" >> /home/apape/.ssh/authorized_keys'`
-- `apape1 → apape2` SSH intermittently drops — may be Binghamton firewall; retry later.
-- Once SSH is stable, run `bash sync-this.sh` from apape1 to pull results and push to GitHub.
+**Sync / SSH — resolved (2026-06-20):** Both directions working. `authorized_keys` on apape1 fixed (was root-owned); apape2 key appended. `sync-this.sh` confirmed working.
 
 ---
 
