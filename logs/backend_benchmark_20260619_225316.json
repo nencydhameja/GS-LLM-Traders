@@ -1,0 +1,21 @@
+[
+  {
+    "label": "ollama",
+    "url": "http://localhost:11434/v1/chat/completions",
+    "model": "gemma3:27b",
+    "mean_s": 2.427,
+    "median_s": 0.813,
+    "min_s": 0.748,
+    "max_s": 17.052,
+    "stdev_s": 5.139,
+    "calls": 10,
+    "prompt_tokens": 625,
+    "completion_tokens": 4,
+    "ollama_native": {
+      "prefill_tok_s": 3704.9,
+      "generation_tok_s": 16.2,
+      "prompt_eval_count": 625,
+      "eval_count": 4
+    }
+  }
+]
