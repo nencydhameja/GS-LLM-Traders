@@ -66,6 +66,22 @@ Started 21:19:30, finished 21:47:42 → **28 min 12 sec**.
 | apape1 CPU (Ollama v0.23.2, GPU not detected) | ~182 min | **Not representative** |
 | apape2 GPU (Ollama v0.30.10, GB10 cuda_v13) | **~28 min** | Benchmark complete 2026-06-19 |
 
+#### Why 28 minutes? Call structure analysis
+
+The benchmark made **528 LLM calls** in 30 effective trading steps across 3 periods — approximately **17–19 calls per step** out of 28 agents. Per-period breakdown:
+
+| Period | Effective steps | LLM calls | Termination reason |
+|--------|----------------|-----------|-------------------|
+| 1 | 8 | 149 | All profitable trades exhausted |
+| 2 | 10 | 179 | 5 idle rounds (no trades) |
+| 3 | 12 | 200 | 5 idle rounds (no trades) |
+
+Not all 28 agents are called each step: buyers (capacity=1) drop out once they trade; buyers with valuations 8 and 0 silently PASS most steps. The remaining ~17–19 active calls per step consist of 4 always-active sellers plus the inframarginal and marginal buyers.
+
+At **~3.2 sec per call** (528 calls × 3.2 s ≈ 28 min), the bottleneck is the GB10's memory bandwidth (273 GB/s LPDDR5X), not compute. For a 27B Q4_K_M model (17 GB), theoretical generation throughput is 273/17 ≈ 16 tok/s; real-world Ollama achieves roughly 8–13 tok/s. The dominant cost is **prefill** (encoding the ~500–1500 token context each call), not generation (responses are 1–5 tokens). This is consistent with observed L4-class hardware (~7–8 tok/s under standard Ollama Q4_K_M), and with community reports of the DGX Spark being "painfully slow" under Ollama's standard CUDA backend vs. NVFP4-optimized inference. The 3.2 sec/call figure is expected and not a sign of misconfiguration.
+
+**Potential speedup:** Ollama's KV cache would amortize repeated system-prompt prefill across calls from the same agent (the system prompt is identical for all calls within a period). Enabling prefix caching could reduce prefill cost by 50–70%, potentially cutting per-run time to ~10–15 min. Not yet tested.
+
 ---
 
 ## Experimental Design
