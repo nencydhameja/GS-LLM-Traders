@@ -80,7 +80,29 @@ Not all 28 agents are called each step: buyers (capacity=1) drop out once they t
 
 At **~3.2 sec per call** (528 calls × 3.2 s ≈ 28 min), the bottleneck is the GB10's memory bandwidth (273 GB/s LPDDR5X), not compute. For a 27B Q4_K_M model (17 GB), theoretical generation throughput is 273/17 ≈ 16 tok/s; real-world Ollama achieves roughly 8–13 tok/s. The dominant cost is **prefill** (encoding the ~500–1500 token context each call), not generation (responses are 1–5 tokens). This is consistent with observed L4-class hardware (~7–8 tok/s under standard Ollama Q4_K_M), and with community reports of the DGX Spark being "painfully slow" under Ollama's standard CUDA backend vs. NVFP4-optimized inference. The 3.2 sec/call figure is expected and not a sign of misconfiguration.
 
-**Potential speedup:** llama-cpp-python with `flash_attn: true` should reduce prefill cost significantly vs. Ollama (whose flash-attention status is unknown). A benchmark comparing both backends is running on apape2 (launched 2026-06-19); results will arrive by email and be committed automatically via `sync-this.sh`. See `benchmark/run_backend_benchmark.sh`.
+**Backend benchmark — partial results (2026-06-19):**
+
+Ollama benchmark completed on apape2. llama-cpp-python benchmark failed and needs a fix before re-running. Results are in `logs/backend_benchmark_*.json` on apape2 (not yet synced due to SSH issues — see below).
+
+| Backend | avg s/call | min | max | prefill tok/s | gen tok/s | prompt tok |
+|---------|-----------|-----|-----|--------------|-----------|------------|
+| Ollama v0.30.10 | 2.43 | 0.75 | 17.05 | 3704 | 16.2 | 625 |
+| llama-cpp-python 0.3.x | — | — | — | — | — | — (failed) |
+
+Note: high variance in Ollama (sd=5.14) likely reflects cold-start on first call and growing context. The prefill speed of 3704 tok/s is much faster than earlier per-run estimates suggested — the 28 min/run figure reflects 528 calls × ~2–3s overhead each, not slow inference.
+
+**llama-cpp-python failure:** `key not found in model: gemma3.attention.layer_norm_rms_epsilon` — the installed version of llama-cpp-python predates gemma3 architecture support. Fix: upgrade the venv at `~/llms/venv` on apape2:
+```bash
+PATH=/usr/local/cuda/bin:$PATH \
+CMAKE_ARGS="-DGGML_CUDA=on -DCMAKE_CUDA_ARCHITECTURES=native" \
+~/llms/venv/bin/pip install "llama-cpp-python[server]" --upgrade
+```
+Then re-run `benchmark/run_backend_benchmark.sh` (it will skip Ollama and only run llama-cpp-python if Ollama results already exist — or just re-run both).
+
+**Sync / SSH issues to resolve:**
+- `apape2 → apape1` SSH fails: `~/.ssh/authorized_keys` on apape1 is owned by root. Need: `sudo sh -c 'echo "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIM5VyUjfEfC0h/b9IUh6X76rPG97FsDNB6tWCD7VBrxs apape@promaxgb10-4be9" >> /home/apape/.ssh/authorized_keys'`
+- `apape1 → apape2` SSH intermittently drops — may be Binghamton firewall; retry later.
+- Once SSH is stable, run `bash sync-this.sh` from apape1 to pull results and push to GitHub.
 
 ---
 
