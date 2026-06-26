@@ -58,6 +58,29 @@ CANONICAL = [
 DEFAULT_PLOT = ["baseline", "refined", "persona_undergrad_econ",
                 "persona_grad_econ", "persona_undergrad_human"]
 
+# Behavioral-dial sweeps. IMPORTANT: these were run on the llama-cpp-python
+# backend (Jun 20-24), a DIFFERENT engine/model artifact than the Ollama
+# baseline/persona cells above (Jun 8-11). They are therefore analysed and
+# plotted SEPARATELY (own pages, own CSVs); dial cells are never placed on the
+# same axis as the Ollama cells, only compared within-dial and vs the human
+# benchmark. Files are the verified single 30-run masters per level (the drve/
+# dave filename codes collide very_averse/very_seeking and very_passive/
+# very_aggressive, so the exact file is pinned, not the suffix).
+DIAL_BACKEND = "llama-cpp-python (Jun 20-24)"
+DIAL_CELLS = [
+    # (dimension, level, order, master filename)
+    ("risk_aversion",  "very_averse",  1, "attanasi_master_gemma3-27b_drve_20260620_141051.csv"),
+    ("risk_aversion",  "averse",       2, "attanasi_master_gemma3-27b_drav_20260621_075134.csv"),
+    ("risk_aversion",  "neutral",      3, "attanasi_master_gemma3-27b_drne_20260621_221142.csv"),
+    ("risk_aversion",  "seeking",      4, "attanasi_master_gemma3-27b_drse_20260622_100047.csv"),
+    ("risk_aversion",  "very_seeking", 5, "attanasi_master_gemma3-27b_drve_20260622_210328.csv"),
+    ("aggressiveness", "very_passive",    1, "attanasi_master_gemma3-27b_dave_20260623_053253.csv"),
+    ("aggressiveness", "passive",         2, "attanasi_master_gemma3-27b_dapa_20260623_155534.csv"),
+    ("aggressiveness", "moderate",        3, "attanasi_master_gemma3-27b_damo_20260624_003816.csv"),
+    ("aggressiveness", "aggressive",      4, "attanasi_master_gemma3-27b_daag_20260624_091138.csv"),
+    ("aggressiveness", "very_aggressive", 5, "attanasi_master_gemma3-27b_dave_20260624_201047.csv"),
+]
+
 
 # --------------------------------------------------------------------------- #
 # Loading + condition labelling
@@ -196,7 +219,81 @@ def analyse(trades):
 # --------------------------------------------------------------------------- #
 # PDF output
 # --------------------------------------------------------------------------- #
-def make_pdf(results, model, out_path, plot_filter=None):
+def _dial_sweep_page(pdf, dim, cells, model):
+    """One trajectory page for a dial sweep: 5 ordered levels + human, CE band."""
+    cells = sorted(cells, key=lambda c: c[1])   # by order index
+    cmap = plt.get_cmap("coolwarm")
+    fig, ax = plt.subplots(figsize=(9.5, 6))
+    ax.axhspan(CE_LO, CE_HI, color="grey", alpha=0.18, zorder=0)
+    ax.text(2.0, (CE_LO + CE_HI) / 2, f"Competitive equilibrium ({CE_LO:g}-{CE_HI:g})",
+            va="center", ha="center", fontsize=10, color="grey")
+    ax.plot([1, 2, 3], [HUMAN[p] for p in (1, 2, 3)], "-o", color="#111111",
+            lw=3.2, ms=8, label="Humans (Table B.1)", zorder=6)
+    n = len(cells)
+    for i, (level, order, r) in enumerate(cells):
+        ps = sorted(r["periods"])
+        y = [r["periods"][p]["mean"] for p in ps]
+        lo = [r["periods"][p]["mean"] - r["periods"][p]["ci_lo"] for p in ps]
+        hi = [r["periods"][p]["ci_hi"] - r["periods"][p]["mean"] for p in ps]
+        c = cmap(i / (n - 1)) if n > 1 else cmap(0.5)
+        ax.plot(ps, y, marker="o", color=c, lw=2.0, ms=7,
+                label=f"{order}. {level}", zorder=4)
+        ax.errorbar(ps, y, yerr=[lo, hi], fmt="none", ecolor=c, alpha=0.5,
+                    capsize=3, zorder=3.9)
+    ax.set_xticks([1, 2, 3])
+    ax.set_xlim(0.9, 3.2)
+    ax.set_xlabel("Trading period", fontsize=12)
+    ax.set_ylabel("Mean transaction price", fontsize=12)
+    pretty = dim.replace("_", " ")
+    ax.set_title(f"{pretty} dial sweep ({model}, {DIAL_BACKEND})\n"
+                 "5 levels vs. human benchmark — within-backend comparison", fontsize=12)
+    ax.legend(loc="center left", bbox_to_anchor=(1.01, 0.5), fontsize=9,
+              framealpha=0.95, title=f"{pretty} level")
+    ax.grid(axis="y", alpha=0.25)
+    fig.tight_layout()
+    pdf.savefig(fig, bbox_inches="tight")
+    plt.close(fig)
+
+
+def _dial_table_page(pdf, dial_results):
+    """Summary table page for all dial levels (slope + P3-P1, clustered)."""
+    rows = []
+    for dim in ("risk_aversion", "aggressiveness"):
+        for level, order, r in sorted(dial_results.get(dim, []), key=lambda c: c[1]):
+            pm = r["periods"]
+            def cell(p): return f"{pm[p]['mean']:.2f}" if p in pm else "-"
+            p3 = (f"{r['p3m1']:+.3f} ({r['p3m1_se']:.3f})"
+                  if not math.isnan(r["p3m1"]) else "n/a")
+            rows.append([f"{dim.split('_')[0]}: {level}", r["n_runs"],
+                         cell(1), cell(2), cell(3),
+                         f"{r['slope']:+.3f} ({r['slope_se']:.3f})", p3,
+                         "diverges from CE" if r["slope"] > 0 else "converges to CE"])
+    rows.append(["HUMANS (Table B.1)", "-", "14.49", "14.10", "13.50",
+                 "-0.495 (n/a)", "-0.990 (n/a)", "converges to CE"])
+    header = ["dial: level", "n_runs", "P1", "P2", "P3",
+              "slope (SE)", "P3-P1 (SE)", "direction"]
+    fig, ax = plt.subplots(figsize=(11, 0.5 + 0.42 * (len(rows) + 2)))
+    ax.axis("off")
+    colw = [0.22, 0.07, 0.07, 0.07, 0.07, 0.16, 0.16, 0.18]
+    tbl = ax.table(cellText=rows, colLabels=header, loc="center",
+                   cellLoc="center", colWidths=colw)
+    tbl.auto_set_font_size(False)
+    tbl.set_fontsize(9)
+    tbl.scale(1, 1.5)
+    for j in range(len(header)):
+        tbl[0, j].set_facecolor("#305496")
+        tbl[0, j].set_text_props(color="white", weight="bold")
+    for (rr, cc), cell in tbl.get_celld().items():
+        if cc == 0 and rr > 0:
+            cell.set_text_props(ha="left")
+            cell.PAD = 0.03
+    ax.set_title(f"Behavioral-dial sweeps ({DIAL_BACKEND}): convergence slope & "
+                 "net drift\n(trade-level OLS, SE clustered by run)", fontsize=11, pad=14)
+    pdf.savefig(fig, bbox_inches="tight")
+    plt.close(fig)
+
+
+def make_pdf(results, model, out_path, plot_filter=None, dial_results=None):
     # stable ordering: baseline, refined, then alphabetical
     def rank(name):
         return (0 if name == "baseline" else 1 if name == "refined" else 2, name)
@@ -276,6 +373,13 @@ def make_pdf(results, model, out_path, plot_filter=None):
                      "(trade-level OLS, SE clustered by run)", fontsize=11, pad=14)
         pdf.savefig(fig, bbox_inches="tight")
         plt.close(fig)
+
+        # ---- dial-sweep pages (separate backend, never mixed with above) ----
+        if dial_results:
+            for dim in ("risk_aversion", "aggressiveness"):
+                if dial_results.get(dim):
+                    _dial_sweep_page(pdf, dim, dial_results[dim], model)
+            _dial_table_page(pdf, dial_results)
     return out_path
 
 
@@ -338,6 +442,44 @@ def write_csvs(results, out_dir):
     return [p1, p2, p3]
 
 
+def write_dial_csvs(dial_results, out_dir):
+    """Write per-level dial CSVs (kept separate from the Ollama RESULTS_* files)."""
+    paths = []
+    pl = os.path.join(out_dir, "DIAL_period_level.csv")
+    with open(pl, "w", newline="") as f:
+        w = csv.writer(f)
+        w.writerow(["dial", "level", "order", "period", "n_runs", "mean_price",
+                    "sd_price", "ci_lo", "ci_hi", "mean_trades", "human_price",
+                    "gap_vs_human", "backend"])
+        for dim in ("risk_aversion", "aggressiveness"):
+            for level, order, r in sorted(dial_results.get(dim, []), key=lambda c: c[1]):
+                for p in sorted(r["periods"]):
+                    d = r["periods"][p]
+                    w.writerow([dim, level, order, p, d["n"], round(d["mean"], 3),
+                                round(d["sd"], 3), round(d["ci_lo"], 3),
+                                round(d["ci_hi"], 3), round(d["trades"], 2),
+                                HUMAN[p], round(d["mean"] - HUMAN[p], 3), DIAL_BACKEND])
+    paths.append(pl)
+
+    cs = os.path.join(out_dir, "DIAL_condition_summary.csv")
+    with open(cs, "w", newline="") as f:
+        w = csv.writer(f)
+        w.writerow(["dial", "level", "order", "n_runs", "slope_beta", "slope_se",
+                    "slope_t", "P3_minus_P1", "P3m1_se", "slope_sig_5pct",
+                    "direction", "backend"])
+        for dim in ("risk_aversion", "aggressiveness"):
+            for level, order, r in sorted(dial_results.get(dim, []), key=lambda c: c[1]):
+                t = r["slope"] / r["slope_se"]
+                w.writerow([dim, level, order, r["n_runs"], round(r["slope"], 4),
+                            round(r["slope_se"], 4), round(t, 2),
+                            round(r["p3m1"], 4), round(r["p3m1_se"], 4),
+                            "yes" if abs(t) > 1.96 else "no",
+                            "diverges from CE" if r["slope"] > 0 else "converges to CE",
+                            DIAL_BACKEND])
+    paths.append(cs)
+    return paths
+
+
 def main():
     ap = argparse.ArgumentParser()
     here = os.path.dirname(os.path.abspath(__file__))
@@ -382,9 +524,39 @@ def main():
     print(f"{'HUMANS (Table B.1)':26s} {'-':>3} {'-0.495 (n/a)':>16} "
           f"{'-0.990 (n/a)':>16}  converges to CE")
 
+    # ---- behavioral-dial sweeps (separate backend) ----
+    dial_results = {"risk_aversion": [], "aggressiveness": []}
+    print(f"\nDial sweeps ({DIAL_BACKEND}) -- analysed/plotted separately from the "
+          f"Ollama cells above:")
+    print(f"{'dial: level':28s} {'n':>3} {'slope (SE)':>16} {'P3-P1 (SE)':>16}  direction")
+    print("-" * 90)
+    for dim, level, order, fn in DIAL_CELLS:
+        path = os.path.join(args.data_dir, fn)
+        if not os.path.exists(path):
+            print(f"  [skip] missing {dim}/{level}: {fn}")
+            continue
+        trades, _ = load_master(path)
+        # verify the file really is the single expected level (filename codes collide)
+        with open(path) as f:
+            levels = {row.get(dim, "") for row in csv.DictReader(f)
+                      if str(row.get("matched", "")).strip().lower() == "true"}
+        if levels != {level}:
+            print(f"  [SKIP-CONTAMINATED] {dim}/{level}: file has levels {levels}")
+            continue
+        r = analyse(trades)
+        dial_results[dim].append((level, order, r))
+        p3 = (f"{r['p3m1']:+.3f} ({r['p3m1_se']:.3f})"
+              if not math.isnan(r["p3m1"]) else "n/a")
+        d = "diverges from CE" if r["slope"] > 0 else "converges to CE"
+        print(f"{dim.split('_')[0]+': '+level:28s} {r['n_runs']:>3} "
+              f"{r['slope']:+.3f} ({r['slope_se']:.3f})".ljust(48)
+              + f"{p3:>16}  {d}")
+
     csvs = write_csvs(results, args.out_dir)
+    csvs += write_dial_csvs(dial_results, args.out_dir)
     pdf = make_pdf(results, args.model,
-                   os.path.join(args.out_dir, "convergence_analysis.pdf"), plot_filter)
+                   os.path.join(args.out_dir, "convergence_analysis.pdf"),
+                   plot_filter, dial_results)
     print("\nWrote:")
     for p in csvs + [pdf]:
         print("  " + p)
