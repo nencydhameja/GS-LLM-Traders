@@ -21,16 +21,16 @@ We replace human subjects with LLM agents and compare trading behavior across 5 
 | 1 | `run_human_baseline.sh` | **Complete** | Committed 2026-06-08 |
 | 2 | `run_memory_ablation.sh` | **Complete** | Committed 2026-06-09 |
 | 3 | `run_persona_ablation.sh` | **Complete** | Committed 2026-06-11 |
-| 4 | `run_dial_risk_aversion.sh` | **Pending restart** | 11/30 done for `very_averse`; Binghamton server outage killed it. **Run fresh on apape2 with `--resume`** |
-| 5 | `run_dial_aggressiveness.sh` | Pending | Prior run data exists (Apr–May); re-running fresh |
-| 6 | `run_dial_profit_orientation.sh` | Pending | Prior run data exists (Apr–May); re-running fresh |
-| 7 | `run_temperature_sweep.sh` | Pending | Prior run data exists (Apr–May); re-running fresh |
-| 8 | `run_full_factorial.sh` | Pending | Queued |
-| 9 | `run_human_baseline_all_models.sh` | Pending | Queued |
+| 4 | `run_dial_risk_aversion.sh` | **Complete** | Finished 2026-06-23; email sent; synced to GitHub |
+| 5 | `run_dial_aggressiveness.sh` | **Complete** | Finished 2026-06-24; email sent; synced to GitHub |
+| 6 | `run_dial_profit_orientation.sh` | **Running** | 2/5 levels done (very_conservative, conservative); ~3 levels remaining |
+| 7 | `run_temperature_sweep.sh` | Queued | |
+| 8 | `run_human_baseline_all_models.sh` | Queued | |
+| 9 | `run_full_factorial.sh` | Queued — runs last | Lion's share (~42 h) |
 
-**Active machine: apape2** (`promaxgb10-4be9`). apape1's GPU is fully occupied by a PancsVriend `run_all_contexts.py` job started 2026-06-11 (100 runs × 1000 steps on gemma-4-31b). Do not interrupt it.
+**Active machine: apape2** (`promaxgb10-4be9`). Queue running via `batch/run_queue.sh` (nohup).
 
-**LLM backend (2026-06-19 onwards):** Local Ollama on apape2 — no longer depends on `chat.binghamton.edu`. `attanasi_experiment.py` auto-detects hostname and routes to `http://localhost:11434/v1/chat/completions`. Both machines run Ollama **v0.30.10** (upgraded 2026-06-19; v0.23.2 did not detect the GB10 GPU and ran on CPU at 10× slower speeds).
+**LLM backend (2026-06-20 onwards):** llama-cpp-python 0.3.31 (GitHub HEAD, CUDA) serving `~/llms/models/gemma-3-27b-it-Q4_K_M.gguf` on port 8081. ~5.7× faster than Ollama (~0.43 s/call vs 2.47 s/call). `attanasi_experiment.py` auto-detects hostname and routes to `http://localhost:8081/v1/chat/completions` with model alias `local-gguf`.
 
 **Previous crash (2026-06-11):** Queue died at start of step 4 because stale progress `.json` files committed from Nancy Dhameja's MacBook had `master_path` pointing to `/Users/nencydhameja/...`. Fixed 2026-06-19 by deleting all stale progress files and restarting from step 4.
 
