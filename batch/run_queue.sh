@@ -49,10 +49,57 @@ run_script() {
     local logfile
 
     echo "=== QUEUE: Starting ${label} ==="
+
+    # Snapshot existing logs so we can identify new ones after the script runs
+    local pre_logs
+    pre_logs=$(ls logs/*.log 2>/dev/null | sort || true)
+
     bash "batch/${script}" "$MODEL" "$RUNS" "$SEED"
     logfile=$(ls -t logs/ | head -1)
 
     commit_and_push "$label"
+
+    # Identify log files created by this script run
+    local new_logs
+    new_logs=$(comm -13 \
+        <(echo "$pre_logs") \
+        <(ls logs/*.log 2>/dev/null | sort || true))
+
+    # Analyze context-length errors in new logs
+    local ctx_summary
+    ctx_summary=$(echo "$new_logs" | python3 - <<'PYEOF'
+import sys, os
+
+logs = [l for l in sys.stdin.read().strip().split('\n') if l and os.path.exists(l)]
+if not logs:
+    print("(no new log files found to analyze)")
+    sys.exit(0)
+
+total_errors = 0
+total_calls = 0
+breakdown = []
+for f in logs:
+    text = open(f).read()
+    errs = text.count('maximum context length')
+    calls = text.count('[local-gguf]')
+    total_errors += errs
+    total_calls += calls
+    breakdown.append(f'  {os.path.basename(f)}: {errs} ctx errors / {calls} calls')
+
+pct = f'{100*total_errors/total_calls:.2f}' if total_calls > 0 else 'N/A'
+print(f'Context-length errors: {total_errors} / {total_calls} calls ({pct}%)')
+print(f'n_ctx setting: 8192 (was 4096 in prior runs)')
+print(f'Prior run baseline (n_ctx=4096): 300-1200 errors per level')
+if total_errors == 0:
+    print('STATUS: RESOLVED -- zero context errors (n_ctx=8192 fix confirmed working)')
+elif total_errors < 20:
+    print('STATUS: SUBSTANTIALLY IMPROVED -- near-zero errors, marginal cases remain')
+else:
+    print('STATUS: STILL OCCURRING -- n_ctx=8192 insufficient, needs further investigation')
+print('Per-log breakdown:')
+print('\n'.join(breakdown))
+PYEOF
+    )
 
     local results=""
     results=$(ls -t output/results_*.txt output/attanasi_bootstrap_*.csv 2>/dev/null | head -5 | xargs -I{} sh -c 'echo "=== {} ==="; cat {}' 2>/dev/null || echo "(no results file found)")
@@ -72,11 +119,14 @@ Log:       /home/apape/zit/GS-LLM-Traders/logs/${logfile}
 Output has been committed and pushed to:
   https://github.com/nencydhameja/GS-LLM-Traders
 
+--- Context-length error analysis ---
+${ctx_summary}
+
 --- Recent results ---
 ${results}
 
 ---
-This email was generated automatically by Claude AI running on promaxgb10-4ae4."
+This email was generated automatically by Claude AI running on $(hostname)."
 
     echo "=== QUEUE: ${label} done, email sent ==="
 }

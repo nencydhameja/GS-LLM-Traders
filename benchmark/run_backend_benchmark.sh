@@ -88,7 +88,7 @@ models:
     model_alias: "local-gguf"
     n_gpu_layers: -1
     flash_attn: true
-    n_ctx: 4096
+    n_ctx: 8192
     n_batch: 512
 YAML
 
