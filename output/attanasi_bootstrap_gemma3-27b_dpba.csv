@@ -1,0 +1,4 @@
+period,model,n_runs,llm_mean_price,llm_sd_price,llm_ci_lo,llm_ci_hi,human_mean_price,llm_mean_trades,human_ce_trades,ci_method
+1,gemma3-27b_dpba,30,14.346,0.406,14.201,14.487,14.49,15.93,16,bootstrap_10000
+2,gemma3-27b_dpba,30,14.608,0.507,14.434,14.789,14.1,15.77,16,bootstrap_10000
+3,gemma3-27b_dpba,30,14.749,0.422,14.6,14.896,13.5,14.87,16,bootstrap_10000
