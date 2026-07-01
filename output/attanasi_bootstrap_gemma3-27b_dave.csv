@@ -1,4 +1,4 @@
 period,model,n_runs,llm_mean_price,llm_sd_price,llm_ci_lo,llm_ci_hi,human_mean_price,llm_mean_trades,human_ce_trades,ci_method
-1,gemma3-27b_dave,30,14.956,0.632,14.738,15.19,14.49,15.5,16,bootstrap_10000
-2,gemma3-27b_dave,30,15.047,0.444,14.89,15.2,14.1,15.67,16,bootstrap_10000
-3,gemma3-27b_dave,30,15.179,0.375,15.053,15.318,13.5,15.07,16,bootstrap_10000
+1,gemma3-27b_dave,30,14.954,0.672,14.725,15.203,14.49,15.63,16,bootstrap_10000
+2,gemma3-27b_dave,30,15.078,0.482,14.913,15.255,14.1,15.67,16,bootstrap_10000
+3,gemma3-27b_dave,30,15.02,0.303,14.912,15.127,13.5,15.37,16,bootstrap_10000
